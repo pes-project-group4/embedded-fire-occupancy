@@ -1,0 +1,41 @@
+name: zephyr-ci
+on:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: base_station
+            board: rpi_pico2/rp2350a/m33
+            board_id: rpi_pico2_rp2350a_m33
+          - app: sensor_node
+            board: rpi_pico2/rp2350a/m33
+            board_id: rpi_pico2_rp2350a_m33
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup Zephyr (SDK + west modules)
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: ${{ matrix.app }}
+          toolchains: arm-zephyr-eabi
+      - name: Build (Release)
+        run: |
+          west build -b ${{ matrix.board }} ${{ matrix.app }} -p auto -d build/${{ matrix.app }}
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.app }}-${{ matrix.board_id }}
+          path: |
+            build/${{ matrix.app }}/zephyr/zephyr.elf
+            build/${{ matrix.app }}/zephyr/zephyr.hex
+            build/${{ matrix.app }}/zephyr/zephyr.bin
+            build/${{ matrix.app }}/zephyr/zephyr.uf2

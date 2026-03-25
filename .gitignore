@@ -1,0 +1,17 @@
+.vscode/
+# Zephyr / west
+zephyr/
+modules/
+tools/
+.west/
+
+# Build output
+build/
+build-*/
+
+# Python
+.venv/
+__pycache__/
+
+# Zephyr SDK
+zephyr-sdk-*/
