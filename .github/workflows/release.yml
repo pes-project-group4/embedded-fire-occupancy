@@ -1,8 +1,7 @@
 name: zephyr-release
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [created]
 permissions:
   contents: write
 jobs:
@@ -36,11 +35,12 @@ jobs:
       - name: Package
         run: |
           mkdir -p dist
-          cp build/${{ matrix.app }}/zephyr/zephyr.uf2 dist/${{ matrix.app }}-${{ matrix.board_id }}-${{ github.ref_name }}.uf2
-          cp build/${{ matrix.app }}/zephyr/zephyr.elf dist/${{ matrix.app }}-${{ matrix.board_id }}-${{ github.ref_name }}.elf
-          cp build/${{ matrix.app }}/zephyr/zephyr.hex dist/${{ matrix.app }}-${{ matrix.board_id }}-${{ github.ref_name }}.hex || true
-          cp build/${{ matrix.app }}/zephyr/zephyr.bin dist/${{ matrix.app }}-${{ matrix.board_id }}-${{ github.ref_name }}.bin || true
-      - name: Create GitHub Release and upload assets
+          cp build/${{ matrix.app }}/zephyr/zephyr.uf2 dist/${{ matrix.app }}-${{ matrix.board_id }}-${{ github.event.release.tag_name }}.uf2
+          cp build/${{ matrix.app }}/zephyr/zephyr.elf dist/${{ matrix.app }}-${{ matrix.board_id }}-${{ github.event.release.tag_name }}.elf
+          cp build/${{ matrix.app }}/zephyr/zephyr.hex dist/${{ matrix.app }}-${{ matrix.board_id }}-${{ github.event.release.tag_name }}.hex || true
+          cp build/${{ matrix.app }}/zephyr/zephyr.bin dist/${{ matrix.app }}-${{ matrix.board_id }}-${{ github.event.release.tag_name }}.bin || true
+      - name: Upload assets to release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.release.tag_name }}
           files: dist/*
