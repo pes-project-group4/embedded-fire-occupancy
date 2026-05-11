@@ -10,4 +10,9 @@
 			gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
 		};
 	};
+
+    uart0 {
+        status = "okay";
+        current-speed = <115200>;
+    };
 };
