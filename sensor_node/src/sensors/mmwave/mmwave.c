@@ -1,20 +1,32 @@
-#include <zephyr/kernel.h>
-#include <zephyr/device.h>
-#include <zephyr/drivers/uart.h>
+#include "mmwave.h"
+#include "uart.h"
 
-const struct device *uart0 = DEVICE_DT_GET(DT_NODELABEL(uart0));
-
-void init()
+char* firmware_version()
 {
-    if(!device_is_ready(uart0))
-    {
-        printk("UART0 not ready\n");
-        return;
-    }
-    printk("UART0 is ready!\n");
+    const char* const length = {0x2, 0x0};
+    const char* const command = {0x0, 0x0};
+
+    send_bytes(header, HEADER_LENGTH);
+    send_bytes(length, 2);
+    send_bytes(command, 2);
+    send_bytes(tail, TAIL_LENGTH);
 }
 
-void send_char(unsigned char ch)
+char* serial_number()
 {
-    uart_poll_out(uart0, ch);
+    const char* const length = {0x2, 0x0};
+    const char* const command = {0x11, 0x0};
+
+    send_bytes(header, HEADER_LENGTH);
+    send_bytes(length, 2);
+    send_bytes(command, 2);
+    send_bytes(tail, TAIL_LENGTH);
+}
+
+void send_bytes(const char* const bytes, int length)
+{
+    for(int i = 0; i < length; i++)
+    {
+        send_byte(bytes[i]);
+    }
 }
