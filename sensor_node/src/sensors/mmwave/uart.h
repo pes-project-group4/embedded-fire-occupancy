@@ -1,8 +1,9 @@
 #ifndef UART_H
 #define UART_H
 
-void init();
-void send_byte(unsigned char byte);
-unsigned char recv_byte();
+#include <zephyr/drivers/uart.h>
+
+void send_byte(const struct device *uart, unsigned char byte);
+unsigned char recv_byte(const struct device *uart);
 
 #endif

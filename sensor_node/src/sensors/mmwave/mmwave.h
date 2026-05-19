@@ -4,8 +4,9 @@
 #define HEADER_LENGTH 4
 #define TAIL_LENGTH 4
 
-char* firmware_version(char* response);
-char* serial_number(char* response);
+void set_normal_mode(char* response);
+void firmware_version(char* response);
+void serial_number(char* response);
 void send_bytes(const char* const bytes, int length);
 
 #endif

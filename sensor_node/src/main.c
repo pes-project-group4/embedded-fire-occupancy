@@ -4,23 +4,19 @@
 #include "sensors/mmwave/uart.h"
 #include "sensors/mmwave/mmwave.h"
 
-//#define LED_NODE DT_ALIAS(led0)
-//
-//#if !DT_NODE_HAS_STATUS(LED_NODE, okay)
-//#error "LED0 alias is not defined in the device tree"
-//#endif
-
-//static const struct gpio_dt_spec led =
-//    GPIO_DT_SPEC_GET(LED_NODE, gpios);
+const struct device *uart0 = DEVICE_DT_GET(DT_NODELABEL(uart0));
 
 int main(void)
 {
-    init();
-    char response[24];
+    char response[24] = {0};
+    //printk("a");
+    //set_normal_mode(response);
     firmware_version(response);
+
     for(int i = 0; i < 24; i++)
     {
-        send_byte(response[i]);
-        k_sleep(K_MSEC(500));
+        k_sleep(K_MSEC(50));
+        //printk("%x ", response[i]);
     }
+    printk("\n");
 }

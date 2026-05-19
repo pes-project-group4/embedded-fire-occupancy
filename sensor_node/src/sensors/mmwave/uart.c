@@ -3,26 +3,26 @@
 #include <zephyr/drivers/uart.h>
 #include "uart.h"
 
-const struct device *uart1 = DEVICE_DT_GET(DT_NODELABEL(uart1));
-
-void init()
+void send_byte(const struct device *uart, unsigned char byte)
 {
-    if(!device_is_ready(uart1))
+    if(!device_is_ready(uart))
     {
-        printk("UART1 not ready\n");
+        printk("UART not ready\n");
         return;
     }
-    printk("UART1 is ready!\n");
+    uart_poll_out(uart, byte);
 }
 
-void send_byte(unsigned char byte)
+unsigned char recv_byte(const struct device *uart)
 {
-    uart_poll_out(uart1, byte);
-}
-
-unsigned char recv_byte()
-{
-    unsigned char byte;
-    uart_poll_in(uart1, &byte);
+    if(!device_is_ready(uart))
+    {
+        printk("UART not ready\n");
+        return -1;
+    }
+    unsigned char byte = 0;
+    //while(uart_poll_in(uart, &byte) == -1);
+    uart_poll_in(uart, &byte);
+    printk("Recv byte: %x\n", byte);
     return byte;
 }
