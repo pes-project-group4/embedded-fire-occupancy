@@ -1,5 +1,6 @@
 #include <zephyr/dt-bindings/gpio/gpio.h>
 #include <zephyr/dt-bindings/adc/adc.h>
+#include <zephyr/dt-bindings/pinctrl/rpi-pico-rp2350a-pinctrl.h>
 
 / {
 	aliases {
@@ -8,7 +9,6 @@
 
 	leds {
 		compatible = "gpio-leds";
-
 		user_led0: user_led0 {
 			gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
 		};
@@ -17,6 +17,64 @@
 	zephyr,user {
 		io-channels = <&adc 0>;
 	};
+};
+
+&pinctrl {
+	i2c0_default: i2c0_default {
+		group1 {
+			pinmux = <I2C0_SDA_P4>, <I2C0_SCL_P5>;
+			input-enable;
+			input-schmitt-enable;
+			bias-pull-up;
+		};
+	};
+
+	i2c1_default: i2c1_default {
+		group1 {
+			pinmux = <I2C1_SDA_P6>, <I2C1_SCL_P7>;
+			input-enable;
+			input-schmitt-enable;
+			bias-pull-up;
+		};
+	};
+
+	uart1_default: uart1_default {
+		group1 {
+			pinmux = <UART1_TX_P8>;
+		};
+		group2 {
+			pinmux = <UART1_RX_P9>;
+			input-enable;
+			bias-pull-up;
+		};
+	};
+};
+
+&i2c0 {
+	status = "okay";
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-names = "default";
+	clock-frequency = <100000>;
+
+	bme680: bme680@77 {
+		compatible = "bosch,bme680";
+		reg = <0x77>;
+		status = "okay";
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	pinctrl-0 = <&i2c1_default>;
+	pinctrl-names = "default";
+	clock-frequency = <100000>;
+};
+
+&uart1 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart1_default>;
+	pinctrl-names = "default";
 };
 
 &adc {
