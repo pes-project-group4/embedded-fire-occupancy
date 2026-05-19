@@ -3,5 +3,6 @@
 
 void init();
 void send_byte(unsigned char byte);
+unsigned char recv_byte();
 
 #endif

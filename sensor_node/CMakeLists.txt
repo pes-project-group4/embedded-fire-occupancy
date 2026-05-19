@@ -8,6 +8,7 @@ target_sources(app PRIVATE
     src/sensors/bme680/bme680.c
     src/sensors/mlx90614/mlx90614.c
     src/sensors/mmwave/mmwave.c
+    src/sensors/mmwave/uart.c
     src/sensors/spw2430/spw2430.c
 )
 target_include_directories(app PRIVATE src/inc)

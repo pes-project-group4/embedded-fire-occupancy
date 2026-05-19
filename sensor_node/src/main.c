@@ -1,6 +1,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
+#include "sensors/mmwave/uart.h"
 #include "sensors/mmwave/mmwave.h"
 
 //#define LED_NODE DT_ALIAS(led0)
@@ -15,25 +16,11 @@
 int main(void)
 {
     init();
-    while(1)
+    char response[24];
+    firmware_version(response);
+    for(int i = 0; i < 24; i++)
     {
-        send_char('A');
+        send_byte(response[i]);
         k_sleep(K_MSEC(500));
     }
-
-    //int ret;
-
-    //if (!device_is_ready(led.port)) {
-    //    return 0;
-    //}
-
-    //ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
-    //if (ret < 0) {
-    //    return 0;
-    //}
-
-    //while (1) {
-    //    gpio_pin_toggle_dt(&led);
-    //    k_sleep(K_MSEC(200));
-    //}
 }
