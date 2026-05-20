@@ -21,8 +21,7 @@ unsigned char recv_byte(const struct device *uart)
         return -1;
     }
     unsigned char byte = 0;
-    //while(uart_poll_in(uart, &byte) == -1);
-    uart_poll_in(uart, &byte);
+    while(uart_poll_in(uart, &byte) == -1);
     printk("Recv byte: %x\n", byte);
     return byte;
 }

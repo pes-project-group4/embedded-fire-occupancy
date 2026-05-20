@@ -16,7 +16,7 @@ int main(void)
     for(int i = 0; i < 24; i++)
     {
         k_sleep(K_MSEC(50));
-        //printk("%x ", response[i]);
+        printk("%x ", response[i]);
     }
     printk("\n");
 }
