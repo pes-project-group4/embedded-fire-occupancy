@@ -18,10 +18,9 @@ unsigned char recv_byte(const struct device *uart)
     if(!device_is_ready(uart))
     {
         printk("UART not ready\n");
-        return -1;
+        return 0xff;
     }
     unsigned char byte = 0;
     while(uart_poll_in(uart, &byte) == -1);
-    printk("Recv byte: %x\n", byte);
     return byte;
 }

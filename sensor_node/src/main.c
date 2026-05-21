@@ -4,19 +4,18 @@
 #include "sensors/mmwave/uart.h"
 #include "sensors/mmwave/mmwave.h"
 
-const struct device *uart0 = DEVICE_DT_GET(DT_NODELABEL(uart0));
+//const struct device *uart0 = DEVICE_DT_GET(DT_NODELABEL(uart0));
 
 int main(void)
 {
-    char response[24] = {0};
-    //printk("a");
-    //set_normal_mode(response);
-    firmware_version(response);
+    char response[18] = {0};
+    set_normal_mode(response);
+    //firmware_version(response);
 
-    for(int i = 0; i < 24; i++)
+    for(int i = 0; i < 18; i++)
     {
+        printk("%02x ", response[i]);
         k_sleep(K_MSEC(50));
-        printk("%x ", response[i]);
     }
     printk("\n");
 }

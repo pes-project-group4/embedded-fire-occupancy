@@ -2,20 +2,21 @@
 #include "mmwave.h"
 #include "uart.h"
 
-static const unsigned char tail[4] = {0x1, 0x2, 0x3, 0x4};
-static const unsigned char header[4] = {0xfa, 0xfb, 0xfc, 0xfd};
+static const unsigned char tail[4] = {0x4, 0x3, 0x2, 0x1};
+static const unsigned char header[4] = {0xfd, 0xfc, 0xfb, 0xfa};
 static const struct device *uart1 = DEVICE_DT_GET(DT_NODELABEL(uart1));
 
 void set_normal_mode(char* response)
 {
-    const int response_length = 24;
-    const char length[2] = {0x0, 0x8};
-    const char command[8] = {0x0, 0x0, 0x0, 0x64, 0x0, 0x0, 0x0, 0x12};
+    recv_byte(uart1);
+    const int response_length = 18;
+    const char length[2] = {0x8, 0x0};
+    const char command[8] = {0x12, 0x0, 0x0, 0x0, 0x64, 0x0, 0x0, 0x0};
 
-    send_bytes(tail, TAIL_LENGTH);
-    send_bytes(command, 8);
-    send_bytes(length, 2);
     send_bytes(header, HEADER_LENGTH);
+    send_bytes(length, 2);
+    send_bytes(command, 8);
+    send_bytes(tail, TAIL_LENGTH);
 
     for(int i = 0; i < response_length; i++)
     {
@@ -26,13 +27,13 @@ void set_normal_mode(char* response)
 void firmware_version(char* response)
 {
     const int response_length = 24;
-    const char length[2] = {0x0, 0x2};
+    const char length[2] = {0x2, 0x0};
     const char command[2] = {0x0, 0x0};
 
-    send_bytes(tail, TAIL_LENGTH);
-    send_bytes(command, 2);
-    send_bytes(length, 2);
     send_bytes(header, HEADER_LENGTH);
+    send_bytes(length, 2);
+    send_bytes(command, 2);
+    send_bytes(tail, TAIL_LENGTH);
 
     for(int i = 0; i < response_length; i++)
     {
@@ -43,13 +44,13 @@ void firmware_version(char* response)
 void serial_number(char* response)
 {
     const int response_length = 18;
-    const char length[2] = {0x0, 0x2};
-    const char command[2] = {0x0, 0x11};
+    const char length[2] = {0x2, 0x0};
+    const char command[2] = {0x11, 0x0};
 
-    send_bytes(tail, TAIL_LENGTH);
-    send_bytes(command, 2);
-    send_bytes(length, 2);
     send_bytes(header, HEADER_LENGTH);
+    send_bytes(length, 2);
+    send_bytes(command, 2);
+    send_bytes(tail, TAIL_LENGTH);
     
     for(int i = 0; i < response_length; i++)
     {
