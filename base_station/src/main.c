@@ -1,66 +1,75 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
-#include <zephyr/sys/sys_io.h>
+#include <zephyr/drivers/led_strip.h>
 
-/* RP2350 hardware register addresses */
-#define IO_BANK0_BASE       0x40028000
-#define GPIO18_CTRL         (IO_BANK0_BASE + (18 * 8) + 4)
+#define NEOPIXEL_NODE DT_ALIAS(neopixel)
 
-#define PADS_BANK0_BASE     0x40038000
-#define PADS_GPIO18         (PADS_BANK0_BASE + 4 + (18 * 4))
+static const struct device *const neopixel = DEVICE_DT_GET(NEOPIXEL_NODE);
 
-#define SIO_BASE            0xD0000000
-#define SIO_GPIO_OE_SET     (SIO_BASE + 0x024)
-#define SIO_GPIO_OUT_SET    (SIO_BASE + 0x014)
-#define SIO_GPIO_OUT_CLR    (SIO_BASE + 0x018)
+static const struct gpio_dt_spec buzzer = GPIO_DT_SPEC_GET(DT_ALIAS(buzzer), gpios);
 
-/* LED still uses Zephyr API */
-static const struct gpio_dt_spec led =
-    GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
+static void neopixel_red(bool on)
+{
+    struct led_rgb pixel = {
+        .r = on ? 255 : 0,
+        .g = 0,
+        .b = 0,
+    };
+
+    led_strip_update_rgb(neopixel, &pixel, 1);
+}
+
+static void buzzer_tone(uint32_t freq_hz, uint32_t duration_ms)
+{
+    uint32_t half_period_us = 1000000U / (freq_hz * 2U);
+    uint32_t cycles = (duration_ms * 1000U) / (half_period_us * 2U);
+
+    for (uint32_t i = 0; i < cycles; i++) {
+        gpio_pin_set_dt(&buzzer, 1);
+        k_busy_wait(half_period_us);
+
+        gpio_pin_set_dt(&buzzer, 0);
+        k_busy_wait(half_period_us);
+    }
+}
 
 int main(void)
 {
-    if (!device_is_ready(led.port)) {
-        return 0;
-    }
-    gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(&buzzer, GPIO_OUTPUT_INACTIVE);
 
-    /* Force GP18 to SIO (GPIO) function = 5 */
-    sys_write32(5, GPIO18_CTRL);
+    bool red_on = false;
+    int64_t next_led_toggle = k_uptime_get() + 1000;
 
-    /* Configure pad: enable output, disable input isolation */
-    uint32_t pad_val = sys_read32(PADS_GPIO18);
-    pad_val &= ~(1 << 7);  /* clear OD (output disable) */
-    pad_val |= (1 << 6);   /* set IE (input enable) */
-    sys_write32(pad_val, PADS_GPIO18);
+    uint32_t freq = 500;
+    int direction = 1;
 
-    /* Set GP18 as output */
-    sys_write32(1u << 18, SIO_GPIO_OE_SET);
+    neopixel_red(false);
 
-    /* Slow blink test first — 2 seconds */
-    for (int i = 0; i < 2; i++) {
-        gpio_pin_set_dt(&led, 1);
-        sys_write32(1u << 18, SIO_GPIO_OUT_SET);
-        k_msleep(1000);
-
-        gpio_pin_set_dt(&led, 0);
-        sys_write32(1u << 18, SIO_GPIO_OUT_CLR);
-        k_msleep(1000);
-    }
-
-    /* Now play 1kHz tone */
     while (1) {
-        gpio_pin_set_dt(&led, 1);
+        int64_t now = k_uptime_get();
 
-        for (int i = 0; i < 2000; i++) {
-            sys_write32(1u << 18, SIO_GPIO_OUT_SET);
-            k_busy_wait(500);
-            sys_write32(1u << 18, SIO_GPIO_OUT_CLR);
-            k_busy_wait(500);
+        // blink neo pixel at 1 Hz
+        if (now >= next_led_toggle) {
+            red_on = !red_on;
+            neopixel_red(red_on);
+            next_led_toggle = now + 1000;
         }
 
-        gpio_pin_set_dt(&led, 0);
-        k_msleep(1000);
+        buzzer_tone(freq, 20);
+
+        if (direction > 0) {
+            freq += 25;
+            if (freq >= 1500) {
+                freq = 1500;
+                direction = -1;
+            }
+        } else {
+            freq -= 25;
+            if (freq <= 500) {
+                freq = 500;
+                direction = 1;
+            }
+        }
     }
 }
