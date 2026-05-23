@@ -5,6 +5,7 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/logging/log.h>
+#include "remote_pico.h"
 #include <errno.h>
 #include <string.h>
 
@@ -42,6 +43,12 @@ LOG_MODULE_REGISTER(remote_pico, CONFIG_SENSOR_LOG_LEVEL);
 #define REG_MIC_RMS_0       0x44  /* int32, ADC counts */
 #define REG_MIC_BASELINE_0  0x48  /* int32, ADC counts */
 
+/* Threshold/config registers */
+#define REG_MIC_PEAK_TH_0   0x60  /* int32, ADC counts */
+#define REG_MIC_RMS_TH_0    0x64  /* int32, ADC counts */
+#define REG_T_OBJ_HIGH_0    0x68  /* int32, centi-C */
+#define REG_T_AIR_HIGH_0    0x6C  /* int32, centi-C */
+
 #define REG_CHIP_ID         0xFF
 #define CHIP_ID_EXPECTED    0x42
 
@@ -52,20 +59,6 @@ LOG_MODULE_REGISTER(remote_pico, CONFIG_SENSOR_LOG_LEVEL);
  */
 #define BURST_START         0x00
 #define BURST_LEN           0x4C  /* 76 bytes */
-
-/*
- * Custom (private) sensor channels for the values that don't have a
- * standard Zephyr counterpart. Numbering starts at SENSOR_CHAN_PRIV_START.
- */
-enum remote_pico_chan {
-    REMOTE_PICO_CHAN_OBJECT_TEMP = SENSOR_CHAN_PRIV_START,
-    REMOTE_PICO_CHAN_MMWAVE_RANGE,
-    REMOTE_PICO_CHAN_OCCUPANCY,
-    REMOTE_PICO_CHAN_MIC_PEAK,
-    REMOTE_PICO_CHAN_MIC_RMS,
-    REMOTE_PICO_CHAN_GAS_VALID,
-    REMOTE_PICO_CHAN_INT_SRC,
-};
 
 struct remote_pico_config {
     struct i2c_dt_spec bus;
@@ -89,6 +82,57 @@ static inline uint16_t buf_u16(const uint8_t *p)
     return sys_get_le16(p);
 }
 
+static int write_u8(const struct device *dev, uint8_t reg, uint8_t val)
+{
+    const struct remote_pico_config *cfg = dev->config;
+    uint8_t tx[2] = { reg, val };
+
+    return i2c_write_dt(&cfg->bus, tx, sizeof(tx));
+}
+
+static int write_i32(const struct device *dev, uint8_t reg, int32_t val)
+{
+    const struct remote_pico_config *cfg = dev->config;
+    uint8_t tx[5];
+
+    tx[0] = reg;
+    sys_put_le32((uint32_t)val, &tx[1]);
+
+    return i2c_write_dt(&cfg->bus, tx, sizeof(tx));
+}
+
+int remote_pico_set_interrupts(const struct device *dev, uint8_t mask)
+{
+    return write_u8(dev, REG_INT_EN, mask);
+}
+
+int remote_pico_clear_interrupts(const struct device *dev)
+{
+    return write_u8(dev, REG_INT_SRC, 0);
+}
+
+int remote_pico_set_object_temp_high(const struct device *dev, int32_t centi_c)
+{
+    return write_i32(dev, REG_T_OBJ_HIGH_0, centi_c);
+}
+
+int remote_pico_set_air_temp_high(const struct device *dev, int32_t centi_c)
+{
+    return write_i32(dev, REG_T_AIR_HIGH_0, centi_c);
+}
+
+int remote_pico_set_mic_peak_threshold(const struct device *dev,
+                                       int32_t adc_counts)
+{
+    return write_i32(dev, REG_MIC_PEAK_TH_0, adc_counts);
+}
+
+int remote_pico_set_mic_rms_threshold(const struct device *dev,
+                                      int32_t adc_counts)
+{
+    return write_i32(dev, REG_MIC_RMS_TH_0, adc_counts);
+}
+
 /* Convert centi-Celsius to sensor_value (val1 = integer part,
  * val2 = micro fractional). */
 static void centi_c_to_sv(int32_t centi_c, struct sensor_value *v)
@@ -103,7 +147,7 @@ static void centi_c_to_sv(int32_t centi_c, struct sensor_value *v)
 static void milli_pct_to_sv(uint32_t milli_pct, struct sensor_value *v)
 {
     v->val1 = (int32_t)(milli_pct / 1000);
-    /* (milli_pct % 1000) is a millipoint; * 1000 → micro. */
+    /* (milli_pct % 1000) is a millipoint; * 1000 converts to micro. */
     v->val2 = (int32_t)((milli_pct % 1000) * 1000);
 }
 
@@ -113,7 +157,7 @@ static void milli_pct_to_sv(uint32_t milli_pct, struct sensor_value *v)
 /* =================================================================== */
 /*
  * One I2C burst read populates the entire local cache. We do it
- * unconditionally regardless of `chan` — there's no per-sensor fetch
+ * unconditionally regardless of `chan`; there's no per-sensor fetch
  * since the cost dominator is the I2C round-trip start/stop, not the
  * byte count.
  */
@@ -166,7 +210,7 @@ static int remote_pico_channel_get(const struct device *dev,
     }
 
     case SENSOR_CHAN_GAS_RES: {
-        /* Gas resistance in ohms — whole-number, no fractional part. */
+        /* Gas resistance in ohms; whole-number, no fractional part. */
         val->val1 = (int32_t)buf_u32(&b[REG_BME_GAS_0]);
         val->val2 = 0;
         return 0;
@@ -227,7 +271,7 @@ static int remote_pico_channel_get(const struct device *dev,
 /*
  * Verify the I2C bus is up and that the sensor node answers with the
  * expected chip ID. If the chip ID is wrong, we still return 0 (the
- * device exists, just isn't speaking our protocol yet) — the user can
+ * device exists, just isn't speaking our protocol yet); the user can
  * see this in the log. Returning -ENODEV would make device_is_ready()
  * fail for the consumer and the whole app would refuse to start, which
  * is unfriendly when the sensor node is just booting up.
