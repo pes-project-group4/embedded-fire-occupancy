@@ -8,6 +8,18 @@
 
 #define I2C_NODE DT_NODELABEL(i2c0)
 
+#define BME680_RESET           0xE0
+#define BME680_ID              0xD0
+#define BME680_CTRL_MEAS       0x74
+#define BME680_CTRL_HUM        0x72
+#define BME680_CTRL_GAS_1      0x71
+#define BME680_CTRL_GAS_0      0x70
+#define BME680_GAS_WAIT_0      0x64
+#define BME680_RES_HEAT_0      0x5A
+#define BME680_MEAS_STATUS_0   0x1D
+#define BME680_I2C_ADDR        0x77
+#define BME680_CHIP_ID         0x61
+
 // calibration registers
 #define COEF1_ADDR 0x8A
 #define COEF1_LEN 25

@@ -1,0 +1,6 @@
+config REMOTE_PICO
+    bool "Remote Pico virtual sensor"
+    default y
+    depends on SENSOR
+    depends on I2C
+    depends on DT_HAS_VND_REMOTE_PICO_ENABLED

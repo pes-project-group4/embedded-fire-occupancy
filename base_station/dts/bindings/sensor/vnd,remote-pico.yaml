@@ -1,0 +1,7 @@
+description: Remote Pico fake sensor over I2C
+
+compatible: "vnd,remote-pico"
+
+include:
+  - name: i2c-device.yaml
+  - name: sensor-device.yaml

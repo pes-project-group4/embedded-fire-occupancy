@@ -2,7 +2,6 @@
 #define SPW2430_H
 
 #include <stdint.h>
-#include <stdbool.h>
 
 #define SPW2430_DEFAULT_CALIB_SAMPLES 500
 #define SPW2430_DEFAULT_WINDOW_SAMPLES 64

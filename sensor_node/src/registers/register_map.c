@@ -1,8 +1,9 @@
 #include "register_map.h"
 
 #include <zephyr/kernel.h>
-#include <string.h>
 #include <errno.h>
+#include <limits.h>
+#include <string.h>
 
 static uint8_t regs[REGMAP_SIZE];
 static struct k_spinlock regs_lock;
@@ -12,6 +13,7 @@ static bool is_writable(uint8_t addr)
 {
     switch (addr) {
     case REG_CTRL:
+    case REG_INT_SRC:
     case REG_INT_EN:
     case REG_MMW_MAX_GATE:
     case REG_MMW_ABSENCE_0:
@@ -24,6 +26,15 @@ static bool is_writable(uint8_t addr)
         }
 
         return false;
+    }
+}
+
+static void sync_irq_status(void)
+{
+    if (regs[REG_INT_SRC] != 0) {
+        regs[REG_STATUS] |= STATUS_IRQ_PENDING;
+    } else {
+        regs[REG_STATUS] &= (uint8_t)~STATUS_IRQ_PENDING;
     }
 }
 
@@ -118,6 +129,9 @@ int regmap_write(uint8_t addr, uint8_t val)
 
     K_SPINLOCK(&regs_lock) {
         regs[addr] = val;
+        if (addr == REG_INT_SRC) {
+            sync_irq_status();
+        }
     }
 
     return 0;
@@ -143,6 +157,7 @@ int regmap_read_burst(uint8_t addr, uint8_t *buf, size_t len)
 int regmap_write_burst(uint8_t addr, const uint8_t *buf, size_t len)
 {
     size_t i;
+    bool int_src_written = false;
 
     if (buf == NULL) {
         return -EINVAL;
@@ -156,7 +171,14 @@ int regmap_write_burst(uint8_t addr, const uint8_t *buf, size_t len)
         for (i = 0; i < len; i++) {
             if (is_writable((uint8_t)(addr + i))) {
                 regs[addr + i] = buf[i];
+                if ((uint8_t)(addr + i) == REG_INT_SRC) {
+                    int_src_written = true;
+                }
             }
+        }
+
+        if (int_src_written) {
+            sync_irq_status();
         }
     }
 

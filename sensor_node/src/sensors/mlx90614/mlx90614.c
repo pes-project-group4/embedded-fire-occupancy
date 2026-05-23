@@ -9,6 +9,11 @@
 
 #define I2C_NODE DT_NODELABEL(i2c0)
 
+#define MLX90614_RAM_TA 0x06
+#define MLX90614_RAM_TOBJ1 0x07
+#define MLX90614_I2C_ADDR 0x5A
+#define MLX90614_ERROR_FLAG_BIT 0x8000
+
 // raw value is Kelvin * 50 => Celsius * 100 = raw * 2 - 27315
 #define KELVIN_OFFSET_CENTI_C 27315
 
