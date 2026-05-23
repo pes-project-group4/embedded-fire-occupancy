@@ -7,7 +7,7 @@
     remote_pico: remote_pico@42 {
         compatible = "vnd,remote-pico";
         reg = <0x42>;
-        int-gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>;
+        int-gpios = <&gpio0 16 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
         status = "okay";
     };
 };

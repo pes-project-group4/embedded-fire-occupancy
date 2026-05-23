@@ -77,6 +77,56 @@ static void print_irq_sources(uint8_t src)
     }
 }
 
+static void print_sensor_snapshot(const struct device *sensor)
+{
+    struct sensor_value v;
+
+    if (sensor_channel_get(sensor, SENSOR_CHAN_AMBIENT_TEMP, &v) == 0) {
+        print_temp("T_air", &v);
+    }
+    if (sensor_channel_get(sensor, SENSOR_CHAN_HUMIDITY, &v) == 0) {
+        print_humidity(&v);
+    }
+    if (sensor_channel_get(sensor, SENSOR_CHAN_GAS_RES, &v) == 0) {
+        printk("Gas=%d ohm  ", v.val1);
+    }
+    if (sensor_channel_get(sensor, REMOTE_PICO_CHAN_GAS_VALID, &v) == 0
+        && v.val1 == 0) {
+        printk("(warming) ");
+    }
+
+    if (sensor_channel_get(sensor,
+                           (enum sensor_channel)REMOTE_PICO_CHAN_OBJECT_TEMP,
+                           &v) == 0) {
+        print_temp("T_obj", &v);
+    }
+
+    bool occ = false;
+    if (sensor_channel_get(sensor,
+                           (enum sensor_channel)REMOTE_PICO_CHAN_OCCUPANCY,
+                           &v) == 0) {
+        occ = (v.val1 != 0);
+        printk("Occupied=%s  ", occ ? "yes" : "no ");
+    }
+    if (occ && sensor_channel_get(sensor,
+                                  (enum sensor_channel)REMOTE_PICO_CHAN_MMWAVE_RANGE,
+                                  &v) == 0
+        && v.val1 > 0) {
+        printk("range=%d cm  ", v.val1);
+    }
+
+    if (sensor_channel_get(sensor,
+                           (enum sensor_channel)REMOTE_PICO_CHAN_MIC_PEAK,
+                           &v) == 0) {
+        printk("MicPk=%d ", v.val1);
+    }
+    if (sensor_channel_get(sensor,
+                           (enum sensor_channel)REMOTE_PICO_CHAN_MIC_RMS,
+                           &v) == 0) {
+        printk("MicRMS=%d ", v.val1);
+    }
+}
+
 static void remote_irq_work_handler(struct k_work *work)
 {
     ARG_UNUSED(work);
@@ -102,6 +152,8 @@ static void remote_irq_work_handler(struct k_work *work)
     if (ret == 0 && v.val1 != 0) {
         printk("[%6u ms][irq] ", k_uptime_get_32());
         print_irq_sources((uint8_t)v.val1);
+        printk("  ");
+        print_sensor_snapshot(remote_sensor);
         printk("\n");
 
         ret = remote_pico_clear_interrupts(remote_sensor);
@@ -244,9 +296,6 @@ int main(void)
     printk("remote_pico ready, polling every 1 s\n\n");
 
     while (1) {
-        struct sensor_value v;
-        bool clear_irq = false;
-
         k_mutex_lock(&remote_sensor_lock, K_FOREVER);
         ret = sensor_sample_fetch(sensor);
         if (ret != 0) {
@@ -260,74 +309,8 @@ int main(void)
         try_configure_remote_interrupt_demo(sensor, false);
 
         printk("[%6u ms] ", k_uptime_get_32());
-
-        /* --- BME680: air temp, humidity, gas --- */
-        if (sensor_channel_get(sensor, SENSOR_CHAN_AMBIENT_TEMP, &v) == 0) {
-            print_temp("T_air", &v);
-        }
-        if (sensor_channel_get(sensor, SENSOR_CHAN_HUMIDITY, &v) == 0) {
-            print_humidity(&v);
-        }
-        if (sensor_channel_get(sensor, SENSOR_CHAN_GAS_RES, &v) == 0) {
-            printk("Gas=%d ohm  ", v.val1);
-        }
-        if (sensor_channel_get(sensor, REMOTE_PICO_CHAN_GAS_VALID, &v) == 0
-            && v.val1 == 0) {
-            printk("(warming) ");
-        }
-
-        /* --- MLX90614: object temp --- */
-        if (sensor_channel_get(sensor,
-                               (enum sensor_channel)REMOTE_PICO_CHAN_OBJECT_TEMP,
-                               &v) == 0) {
-            print_temp("T_obj", &v);
-        }
-
-        /* --- mmWave: occupancy + range --- */
-        bool occ = false;
-        if (sensor_channel_get(sensor,
-                               (enum sensor_channel)REMOTE_PICO_CHAN_OCCUPANCY,
-                               &v) == 0) {
-            occ = (v.val1 != 0);
-            printk("Occupied=%s  ", occ ? "yes" : "no ");
-        }
-        if (occ && sensor_channel_get(sensor,
-                                      (enum sensor_channel)REMOTE_PICO_CHAN_MMWAVE_RANGE,
-                                      &v) == 0
-            && v.val1 > 0) {
-            printk("range=%d cm  ", v.val1);
-        }
-
-        /* --- Mic: peak + RMS --- */
-        if (sensor_channel_get(sensor,
-                               (enum sensor_channel)REMOTE_PICO_CHAN_MIC_PEAK,
-                               &v) == 0) {
-            printk("MicPk=%d ", v.val1);
-        }
-        if (sensor_channel_get(sensor,
-                               (enum sensor_channel)REMOTE_PICO_CHAN_MIC_RMS,
-                               &v) == 0) {
-            printk("MicRMS=%d ", v.val1);
-        }
-
-        /* --- IRQ source, also handled by the GPIO callback path --- */
-        if (sensor_channel_get(sensor,
-                               (enum sensor_channel)REMOTE_PICO_CHAN_INT_SRC,
-                               &v) == 0
-            && v.val1 != 0) {
-            print_irq_sources((uint8_t)v.val1);
-            clear_irq = true;
-        }
-
+        print_sensor_snapshot(sensor);
         printk("\n");
-
-        if (clear_irq) {
-            ret = remote_pico_clear_interrupts(sensor);
-            if (ret != 0) {
-                printk("[%6u ms] interrupt clear failed: %d\n",
-                       k_uptime_get_32(), ret);
-            }
-        }
 
         k_mutex_unlock(&remote_sensor_lock);
         k_sleep(POLL_PERIOD);
