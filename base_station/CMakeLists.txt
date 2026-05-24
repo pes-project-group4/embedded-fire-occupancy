@@ -5,5 +5,8 @@ project(base_station)
 
 target_sources(app PRIVATE
     src/main.c
+    src/fire_alarm.c
+    src/remote_pico_display.c
+    src/remote_pico_interrupts.c
     drivers/sensor/remote_pico/remote_pico.c
 )
