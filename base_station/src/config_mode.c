@@ -285,8 +285,7 @@ static void configure_absence_delay(const struct device *sensor,
     }
 }
 
-void config_mode_run(const struct device *sensor,
-                     exit_requested_fn exit_requested)
+void config_mode_run(const struct device *sensor, exit_requested_fn exit_requested)
 {
     char line[LINE_BUF_LEN];
 

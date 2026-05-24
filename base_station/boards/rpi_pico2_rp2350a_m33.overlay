@@ -2,18 +2,6 @@
 #include <zephyr/dt-bindings/led/led.h>
 #include <zephyr/dt-bindings/pinctrl/rpi-pico-rp2350a-pinctrl.h>
 
-&i2c0 {
-    status = "okay";
-    clock-frequency = <I2C_BITRATE_STANDARD>;   /* 100 kHz to start */
-
-    remote_pico: remote_pico@42 {
-        compatible = "vnd,remote-pico";
-        reg = <0x42>;
-        int-gpios = <&gpio0 16 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
-        status = "okay";
-    };
-};
-
 &spi0 {
     status = "disabled";
 };
@@ -24,7 +12,31 @@
             pinmux = <PIO0_P28>;
         };
     };
+
+    i2c1_default: i2c1_default {
+		group1 {
+			pinmux = <I2C1_SDA_P6>, <I2C1_SCL_P7>;
+			input-enable;
+			input-schmitt-enable;
+			bias-pull-up;
+		};
+	};
 };
+
+&i2c1 {
+    status = "okay";
+    pinctrl-0 = <&i2c1_default>;
+    pinctrl-names = "default";
+    clock-frequency = <I2C_BITRATE_STANDARD>;   /* 100 kHz to start */
+
+    remote_pico: remote_pico@42 {
+        compatible = "vnd,remote-pico";
+        reg = <0x42>;
+        int-gpios = <&gpio0 16 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+        status = "okay";
+    };
+};
+
 
 / {
     chosen {

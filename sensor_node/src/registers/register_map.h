@@ -62,19 +62,12 @@ int regmap_write(uint8_t addr, uint8_t val);
 int regmap_read_burst(uint8_t addr, uint8_t *buf, size_t len);
 int regmap_write_burst(uint8_t addr, const uint8_t *buf, size_t len);
 
-void regmap_publish_bme680(int32_t temp_centi_c,
-                           uint32_t hum_milli_pct,
-                           uint32_t gas_ohm,
-                           bool gas_valid);
-
+void regmap_publish_bme680(int32_t temp_centi_c, uint32_t hum_milli_pct, uint32_t gas_ohm, bool gas_valid);
 void regmap_publish_mlx90614(int32_t amb_centi_c, int32_t obj_centi_c);
-
 void regmap_publish_mmwave(bool present, uint16_t range_cm);
-
 void regmap_publish_mic(int32_t peak, int32_t rms, int32_t baseline);
 
 uint8_t regmap_get_ctrl(void);
-
 void regmap_get_mmwave_config(uint8_t *max_gate, uint16_t *absence_s);
 
 #endif

@@ -21,8 +21,7 @@
 #define FREQ_STEP_HZ 25
 
 static const struct device *const neopixel = DEVICE_DT_GET(NEOPIXEL_NODE);
-static const struct gpio_dt_spec buzzer =
-    GPIO_DT_SPEC_GET(BUZZER_NODE, gpios);
+static const struct gpio_dt_spec buzzer = GPIO_DT_SPEC_GET(BUZZER_NODE, gpios);
 
 static K_SEM_DEFINE(alarm_start_sem, 0, 1);
 static K_THREAD_STACK_DEFINE(alarm_stack, ALARM_STACK_SIZE);
@@ -36,9 +35,7 @@ static bool neopixel_ready;
 
 static void neopixel_red(bool on)
 {
-    if (!neopixel_ready) {
-        return;
-    }
+    if (!neopixel_ready) return;
 
     struct led_rgb pixel = {
         .r = on ? 255 : 0,

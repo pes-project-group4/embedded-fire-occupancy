@@ -190,13 +190,11 @@ static uint8_t calc_res_heat(int16_t target_c, int16_t ambient_c)
     int32_t v5;
     int32_t heatr_res_x100;
 
-    if (target_c > 400)
-        target_c = 400;
+    if (target_c > 400) target_c = 400;
 
     v1 = (((int32_t)ambient_c * cal.GH3) / 1000) * 256;
 
-    v2 = (cal.GH1 + 784) *
-         (((((cal.GH2 + 154009) * target_c * 5) / 100) + 3276800) / 10);
+    v2 = (cal.GH1 + 784) * (((((cal.GH2 + 154009) * target_c * 5) / 100) + 3276800) / 10);
 
     v3 = v1 + (v2 / 2);
     v4 = v3 / (cal.res_heat_range + 4);

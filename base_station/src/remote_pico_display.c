@@ -9,13 +9,11 @@
 
 static void print_temp(const char *label, const struct sensor_value *v)
 {
-    /* sensor_value::val2 is signed microunits; preserve sign cleanly. */
     int frac = v->val2 / 10000;
 
     if (frac < 0) {
         frac = -frac;
     }
-
     printk("%s=%d.%02d C  ", label, v->val1, frac);
 }
 
@@ -26,7 +24,6 @@ static void print_humidity(const struct sensor_value *v)
     if (frac < 0) {
         frac = -frac;
     }
-
     printk("RH=%d.%03d %%  ", v->val1, frac);
 }
 
@@ -57,35 +54,25 @@ void remote_pico_print_sensor_snapshot(const struct device *sensor)
         printk("(warming) ");
     }
 
-    if (sensor_channel_get(sensor,
-                           (enum sensor_channel)REMOTE_PICO_CHAN_OBJECT_TEMP,
-                           &v) == 0) {
+    if (sensor_channel_get(sensor, (enum sensor_channel)REMOTE_PICO_CHAN_OBJECT_TEMP, &v) == 0) {
         print_temp("T_obj", &v);
     }
 
     bool occ = false;
 
-    if (sensor_channel_get(sensor,
-                           (enum sensor_channel)REMOTE_PICO_CHAN_OCCUPANCY,
-                           &v) == 0) {
+    if (sensor_channel_get(sensor, (enum sensor_channel)REMOTE_PICO_CHAN_OCCUPANCY, &v) == 0) {
         occ = (v.val1 != 0);
         printk("Occupied=%s  ", occ ? "yes" : "no ");
     }
-    if (occ && sensor_channel_get(sensor,
-                                  (enum sensor_channel)REMOTE_PICO_CHAN_MMWAVE_RANGE,
-                                  &v) == 0
+    if (occ && sensor_channel_get(sensor, (enum sensor_channel)REMOTE_PICO_CHAN_MMWAVE_RANGE, &v) == 0
         && v.val1 > 0) {
         printk("range=%d cm  ", v.val1);
     }
 
-    if (sensor_channel_get(sensor,
-                           (enum sensor_channel)REMOTE_PICO_CHAN_MIC_PEAK,
-                           &v) == 0) {
+    if (sensor_channel_get(sensor, (enum sensor_channel)REMOTE_PICO_CHAN_MIC_PEAK, &v) == 0) {
         printk("MicPk=%d ", v.val1);
     }
-    if (sensor_channel_get(sensor,
-                           (enum sensor_channel)REMOTE_PICO_CHAN_MIC_RMS,
-                           &v) == 0) {
+    if (sensor_channel_get(sensor, (enum sensor_channel)REMOTE_PICO_CHAN_MIC_RMS, &v) == 0) {
         printk("MicRMS=%d ", v.val1);
     }
 }

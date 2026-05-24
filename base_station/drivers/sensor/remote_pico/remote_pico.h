@@ -4,17 +4,6 @@
 #include <zephyr/drivers/sensor.h>
 #include <stdint.h>
 
-/*
- * Custom sensor channels exposed by the remote_pico driver.
- *
- * Standard Zephyr channels we also support (use directly):
- *   SENSOR_CHAN_AMBIENT_TEMP  - air temperature (BME680)
- *   SENSOR_CHAN_HUMIDITY      - relative humidity (BME680)
- *   SENSOR_CHAN_GAS_RES       - gas resistance in ohm (BME680)
- *
- * Custom channels for everything else live here. Numbering starts at
- * SENSOR_CHAN_PRIV_START as required by Zephyr.
- */
 enum remote_pico_chan {
     REMOTE_PICO_CHAN_OBJECT_TEMP = SENSOR_CHAN_PRIV_START,
     REMOTE_PICO_CHAN_MMWAVE_RANGE,
@@ -33,7 +22,6 @@ int remote_pico_set_interrupts(const struct device *dev, uint8_t mask);
 int remote_pico_clear_interrupts(const struct device *dev);
 int remote_pico_set_object_temp_high(const struct device *dev, int32_t centi_c);
 int remote_pico_set_mmwave_max_gate(const struct device *dev, uint8_t max_gate);
-int remote_pico_set_mmwave_absence_delay(const struct device *dev,
-                                         uint16_t seconds);
+int remote_pico_set_mmwave_absence_delay(const struct device *dev, uint16_t seconds);
 
-#endif /* REMOTE_PICO_CHANNELS_H_ */
+#endif

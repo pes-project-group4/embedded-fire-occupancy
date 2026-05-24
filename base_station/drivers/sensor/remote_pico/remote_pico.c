@@ -12,13 +12,6 @@
 
 LOG_MODULE_REGISTER(remote_pico, CONFIG_SENSOR_LOG_LEVEL);
 
-/*
- * Layout of the sensor node's register map (mirrors register_map.h on the
- * sensor-node side). We don't include that header directly because it
- * pulls in Zephyr headers from a different build, so we re-declare the
- * offsets here. Keep these in sync with register_map.h.
- */
-
 /* control / status */
 #define REG_STATUS          0x00
 #define REG_INT_SRC         0x02
@@ -50,11 +43,7 @@ LOG_MODULE_REGISTER(remote_pico, CONFIG_SENSOR_LOG_LEVEL);
 #define REG_CHIP_ID         0xFF
 #define CHIP_ID_EXPECTED    0x42
 
-/* Burst window: start at REG_STATUS, read through end of mic baseline.
- * That's 0x00..0x4B = 76 bytes. The Pico's I2C target buffer is usually
- * larger than this; if it's a problem on the target side we can split
- * into two reads.
- */
+/// I2C burst read starting at this register populates the entire local cache
 #define BURST_START         0x00
 #define BURST_LEN           0x4C  /* 76 bytes */
 
@@ -153,18 +142,7 @@ static void milli_pct_to_sv(uint32_t milli_pct, struct sensor_value *v)
     v->val2 = (int32_t)((milli_pct % 1000) * 1000);
 }
 
-
-/* =================================================================== */
-/* sample_fetch                                                        */
-/* =================================================================== */
-/*
- * One I2C burst read populates the entire local cache. We do it
- * unconditionally regardless of `chan`; there's no per-sensor fetch
- * since the cost dominator is the I2C round-trip start/stop, not the
- * byte count.
- */
-static int remote_pico_sample_fetch(const struct device *dev,
-                                    enum sensor_channel chan)
+static int remote_pico_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
     const struct remote_pico_config *cfg = dev->config;
     struct remote_pico_data *data = dev->data;
@@ -187,13 +165,7 @@ static int remote_pico_sample_fetch(const struct device *dev,
     return 0;
 }
 
-
-/* =================================================================== */
-/* channel_get                                                         */
-/* =================================================================== */
-static int remote_pico_channel_get(const struct device *dev,
-                                   enum sensor_channel chan,
-                                   struct sensor_value *val)
+static int remote_pico_channel_get(const struct device *dev, enum sensor_channel chan, struct sensor_value *val)
 {
     struct remote_pico_data *data = dev->data;
     const uint8_t *b = data->buf;
@@ -262,18 +234,6 @@ static int remote_pico_channel_get(const struct device *dev,
     }
 }
 
-
-/* =================================================================== */
-/* init                                                                */
-/* =================================================================== */
-/*
- * Verify the I2C bus is up and that the sensor node answers with the
- * expected chip ID. If the chip ID is wrong, we still return 0 (the
- * device exists, just isn't speaking our protocol yet); the user can
- * see this in the log. Returning -ENODEV would make device_is_ready()
- * fail for the consumer and the whole app would refuse to start, which
- * is unfriendly when the sensor node is just booting up.
- */
 static int remote_pico_init(const struct device *dev)
 {
     const struct remote_pico_config *cfg = dev->config;
@@ -289,7 +249,6 @@ static int remote_pico_init(const struct device *dev)
     int ret = i2c_write_read_dt(&cfg->bus, &addr, 1, &id, 1);
     if (ret != 0) {
         LOG_WRN("chip ID read failed: %d (sensor node off?)", ret);
-        /* Still succeed; periodic fetch will retry. */
         return 0;
     }
 

@@ -14,7 +14,6 @@ static uint8_t sanitize_interrupt_write(uint8_t addr, uint8_t val)
     if (addr == REG_INT_SRC || addr == REG_INT_EN) {
         return val & INT_SRC_T_OBJ_HIGH;
     }
-
     return val;
 }
 
@@ -74,16 +73,13 @@ static int32_t load_i32_le(uint8_t addr)
                   ((uint32_t)regs[addr + 1] << 8) |
                   ((uint32_t)regs[addr + 2] << 16) |
                   ((uint32_t)regs[addr + 3] << 24));
-
     return v;
 }
 
 static uint16_t load_u16_le(uint8_t addr)
 {
     uint16_t v;
-
     v = (uint16_t)(regs[addr] | ((uint16_t)regs[addr + 1] << 8));
-
     return v;
 }
 
@@ -113,22 +109,17 @@ int regmap_init(void)
 
 int regmap_read(uint8_t addr, uint8_t *out)
 {
-    if (out == NULL) {
-        return -EINVAL;
-    }
+    if (out == NULL) return -EINVAL;
 
     K_SPINLOCK(&regs_lock) {
         *out = regs[addr];
     }
-
     return 0;
 }
 
 int regmap_write(uint8_t addr, uint8_t val)
 {
-    if (!is_writable(addr)) {
-        return 0;
-    }
+    if (!is_writable(addr)) return 0;
 
     K_SPINLOCK(&regs_lock) {
         regs[addr] = sanitize_interrupt_write(addr, val);
@@ -136,19 +127,14 @@ int regmap_write(uint8_t addr, uint8_t val)
             sync_irq_status();
         }
     }
-
     return 0;
 }
 
 int regmap_read_burst(uint8_t addr, uint8_t *buf, size_t len)
 {
-    if (buf == NULL) {
-        return -EINVAL;
-    }
+    if (buf == NULL) return -EINVAL;
 
-    if ((size_t)addr + len > REGMAP_SIZE) {
-        return -EINVAL;
-    }
+    if ((size_t)addr + len > REGMAP_SIZE) return -EINVAL;
 
     K_SPINLOCK(&regs_lock) {
         memcpy(buf, &regs[addr], len);
@@ -162,9 +148,7 @@ int regmap_write_burst(uint8_t addr, const uint8_t *buf, size_t len)
     size_t i;
     bool int_src_written = false;
 
-    if (buf == NULL) {
-        return -EINVAL;
-    }
+    if (buf == NULL) return -EINVAL;
 
     if ((size_t)addr + len > REGMAP_SIZE) {
         return -EINVAL;
@@ -199,10 +183,7 @@ static void raise_irq(uint8_t src_bit)
     }
 }
 
-void regmap_publish_bme680(int32_t temp_centi_c,
-                           uint32_t hum_milli_pct,
-                           uint32_t gas_ohm,
-                           bool gas_valid)
+void regmap_publish_bme680(int32_t temp_centi_c, uint32_t hum_milli_pct, uint32_t gas_ohm, bool gas_valid)
 {
     K_SPINLOCK(&regs_lock) {
         store_i32_le(REG_BME_TEMP_0, temp_centi_c);
@@ -235,7 +216,6 @@ void regmap_publish_mmwave(bool present, uint16_t range_cm)
 {
     K_SPINLOCK(&regs_lock) {
         store_u16_le(REG_MMW_RANGE_0, range_cm);
-
         regs[REG_MMW_PRESENT] = present ? 1 : 0;
         regs[REG_STATUS] |= STATUS_DATA_READY;
     }
@@ -247,7 +227,6 @@ void regmap_publish_mic(int32_t peak, int32_t rms, int32_t baseline)
         store_i32_le(REG_MIC_PEAK_0, peak);
         store_i32_le(REG_MIC_RMS_0, rms);
         store_i32_le(REG_MIC_BASELINE_0, baseline);
-
         regs[REG_STATUS] |= STATUS_DATA_READY;
     }
 }
@@ -255,11 +234,9 @@ void regmap_publish_mic(int32_t peak, int32_t rms, int32_t baseline)
 uint8_t regmap_get_ctrl(void)
 {
     uint8_t v;
-
     K_SPINLOCK(&regs_lock) {
         v = regs[REG_CTRL];
     }
-
     return v;
 }
 
@@ -269,7 +246,6 @@ void regmap_get_mmwave_config(uint8_t *max_gate, uint16_t *absence_s)
         if (max_gate) {
             *max_gate = regs[REG_MMW_MAX_GATE];
         }
-
         if (absence_s) {
             *absence_s = load_u16_le(REG_MMW_ABSENCE_0);
         }

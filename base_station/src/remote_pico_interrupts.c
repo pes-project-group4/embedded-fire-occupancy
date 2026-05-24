@@ -15,16 +15,14 @@
 #define REMOTE_PICO_NODE DT_NODELABEL(remote_pico)
 #define IRQ_CONFIG_RETRY_MS 2000
 
-static const struct gpio_dt_spec remote_irq =
-    GPIO_DT_SPEC_GET_OR(REMOTE_PICO_NODE, int_gpios, {0});
+static const struct gpio_dt_spec remote_irq = GPIO_DT_SPEC_GET_OR(REMOTE_PICO_NODE, int_gpios, {0});
 
 static const struct device *remote_sensor;
 static struct gpio_callback remote_irq_cb;
 static K_MUTEX_DEFINE(remote_sensor_lock);
 static bool interrupt_demo_configured;
 static uint32_t last_irq_config_try_ms;
-static int32_t fire_threshold_centi_c =
-    REMOTE_PICO_FIRE_THRESHOLD_DEFAULT_CENTI_C;
+static int32_t fire_threshold_centi_c = REMOTE_PICO_FIRE_THRESHOLD_DEFAULT_CENTI_C;
 
 static void remote_irq_work_handler(struct k_work *work);
 static K_WORK_DEFINE(remote_irq_work, remote_irq_work_handler);
@@ -33,12 +31,9 @@ static bool remote_sensor_is_occupied(void)
 {
     struct sensor_value v;
 
-    if (sensor_channel_get(remote_sensor,
-                           (enum sensor_channel)REMOTE_PICO_CHAN_OCCUPANCY,
-                           &v) != 0) {
+    if (sensor_channel_get(remote_sensor, (enum sensor_channel)REMOTE_PICO_CHAN_OCCUPANCY, &v) != 0) {
         return false;
     }
-
     return v.val1 != 0;
 }
 
@@ -56,25 +51,20 @@ static void remote_irq_work_handler(struct k_work *work)
 {
     ARG_UNUSED(work);
 
-    if (remote_sensor == NULL) {
-        return;
-    }
+    if (remote_sensor == NULL) return;
 
     remote_pico_interrupts_lock_sensor();
 
     int ret = sensor_sample_fetch(remote_sensor);
     if (ret != 0) {
-        printk("[%6u ms][irq] sample_fetch failed: %d\n",
-               k_uptime_get_32(), ret);
+        printk("[%6u ms][irq] sample_fetch failed: %d\n", k_uptime_get_32(), ret);
         remote_pico_interrupts_unlock_sensor();
         return;
     }
 
     struct sensor_value v;
 
-    ret = sensor_channel_get(remote_sensor,
-                             (enum sensor_channel)REMOTE_PICO_CHAN_INT_SRC,
-                             &v);
+    ret = sensor_channel_get(remote_sensor, (enum sensor_channel)REMOTE_PICO_CHAN_INT_SRC, &v);
     if (ret == 0 && v.val1 != 0) {
         uint8_t src = (uint8_t)v.val1;
 
@@ -90,17 +80,14 @@ static void remote_irq_work_handler(struct k_work *work)
 
         ret = remote_pico_clear_interrupts(remote_sensor);
         if (ret != 0) {
-            printk("[%6u ms][irq] clear failed: %d\n",
-                   k_uptime_get_32(), ret);
+            printk("[%6u ms][irq] clear failed: %d\n", k_uptime_get_32(), ret);
         }
     }
 
     remote_pico_interrupts_unlock_sensor();
 }
 
-static void remote_irq_isr(const struct device *port,
-                           struct gpio_callback *cb,
-                           uint32_t pins)
+static void remote_irq_isr(const struct device *port, struct gpio_callback *cb, uint32_t pins)
 {
     ARG_UNUSED(port);
     ARG_UNUSED(cb);
@@ -182,8 +169,7 @@ int remote_pico_interrupts_set_fire_threshold(int32_t centi_c)
         ret = remote_pico_clear_interrupts(remote_sensor);
     }
     if (ret == 0) {
-        ret = remote_pico_set_interrupts(remote_sensor,
-                                         REMOTE_PICO_INT_T_OBJ_HIGH);
+        ret = remote_pico_set_interrupts(remote_sensor, REMOTE_PICO_INT_T_OBJ_HIGH);
     }
     if (ret == 0) {
         interrupt_demo_configured = true;
@@ -222,9 +208,7 @@ static int configure_remote_interrupt_demo(const struct device *sensor)
         return ret;
     }
 
-    printk("interrupt demo: GPIO16, T_obj > %d.%02d C\n",
-           fire_threshold_centi_c / 100,
-           fire_threshold_centi_c % 100);
+    printk("interrupt demo: GPIO16, T_obj > %d.%02d C\n", fire_threshold_centi_c / 100, fire_threshold_centi_c % 100);
 
     return 0;
 }
@@ -233,13 +217,8 @@ void remote_pico_interrupts_try_configure(bool force)
 {
     uint32_t now = k_uptime_get_32();
 
-    if (remote_sensor == NULL || interrupt_demo_configured) {
-        return;
-    }
-
-    if (!force && (now - last_irq_config_try_ms) < IRQ_CONFIG_RETRY_MS) {
-        return;
-    }
+    if (remote_sensor == NULL || interrupt_demo_configured) return;
+    if (!force && (now - last_irq_config_try_ms) < IRQ_CONFIG_RETRY_MS) return;
 
     last_irq_config_try_ms = now;
 

@@ -46,9 +46,8 @@ static int smbus_read_word(uint8_t cmd, uint16_t *out)
     int ret;
 
     ret = i2c_write_read(i2c_dev, MLX90614_I2C_ADDR, &cmd, 1, rx, 3);
-    if (ret < 0) {
+    if (ret < 0)
         return ret;
-    }
 
     uint8_t pec = 0;
 
@@ -58,9 +57,7 @@ static int smbus_read_word(uint8_t cmd, uint16_t *out)
     pec = crc8(pec, rx[0]);
     pec = crc8(pec, rx[1]);
 
-    if (pec != rx[2]) {
-        return -EIO;
-    }
+    if (pec != rx[2]) return -EIO;
 
     *out = (uint16_t)rx[0] | ((uint16_t)rx[1] << 8);
 
@@ -76,7 +73,6 @@ static int raw_to_centi_c(uint16_t raw, int32_t *out)
     }
 
     *out = ((int32_t)raw * 2) - KELVIN_OFFSET_CENTI_C;
-
     return 0;
 }
 
@@ -91,7 +87,7 @@ int mlx90614_init(void)
         return -ENODEV;
     }
 
-    /* simple test read to check if sensor works */
+    // simple test read to check if sensor works
     ret = smbus_read_word(MLX90614_RAM_TA, &raw);
     if (ret < 0) {
         return ret;
@@ -123,9 +119,7 @@ int mlx90614_read(struct mlx90614_sample *sample)
         return ret;
     }
 
-    if (raw_ta & MLX90614_ERROR_FLAG_BIT) {
-        return -EIO;
-    }
+    if (raw_ta & MLX90614_ERROR_FLAG_BIT) return -EIO;
 
     sample->ambient_centi_c = ((int32_t)raw_ta * 2) - KELVIN_OFFSET_CENTI_C;
 
