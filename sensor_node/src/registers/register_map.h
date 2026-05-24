@@ -18,11 +18,7 @@
 #define CTRL_EN_MIC (1u << 3)
 
 // interrupt source bits
-#define INT_SRC_MIC_PEAK (1u << 0)
-#define INT_SRC_MIC_RMS (1u << 1)
 #define INT_SRC_T_OBJ_HIGH (1u << 2)
-#define INT_SRC_T_AIR_HIGH (1u << 3)
-#define INT_SRC_MMWAVE (1u << 4)
 
 // status bits
 #define STATUS_DATA_READY (1u << 0)
@@ -50,10 +46,7 @@
 #define REG_MIC_BASELINE_0 0x48
 
 // threshold registers
-#define REG_MIC_PEAK_TH_0 0x60
-#define REG_MIC_RMS_TH_0 0x64
 #define REG_T_OBJ_HIGH_0 0x68
-#define REG_T_AIR_HIGH_0 0x6C
 
 // chip ID
 #define REG_CHIP_ID 0xFF

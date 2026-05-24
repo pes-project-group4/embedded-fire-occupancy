@@ -123,14 +123,8 @@ static void irq_pump_entry(void *p1, void *p2, void *p3)
         }
 
         if (src != last_src) {
-            DBG("irq", "INT_SRC=0x%02X status=0x%02X "
-                "(mic_pk=%d mic_rms=%d obj=%d air=%d mmw=%d)",
-                src, status,
-                !!(src & INT_SRC_MIC_PEAK),
-                !!(src & INT_SRC_MIC_RMS),
-                !!(src & INT_SRC_T_OBJ_HIGH),
-                !!(src & INT_SRC_T_AIR_HIGH),
-                !!(src & INT_SRC_MMWAVE));
+            DBG("irq", "INT_SRC=0x%02X status=0x%02X (obj=%d)",
+                src, status, !!(src & INT_SRC_T_OBJ_HIGH));
             last_src = src;
         }
 
