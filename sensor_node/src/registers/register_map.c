@@ -18,7 +18,6 @@ static uint8_t sanitize_interrupt_write(uint8_t addr, uint8_t val)
     return val;
 }
 
-// check if register can be written
 static bool is_writable(uint8_t addr)
 {
     switch (addr) {
@@ -48,14 +47,12 @@ static void sync_irq_status(void)
     }
 }
 
-// store 16-bit value in little endian
 static void store_u16_le(uint8_t addr, uint16_t v)
 {
     regs[addr] = (uint8_t)(v & 0xFF);
     regs[addr + 1] = (uint8_t)(v >> 8);
 }
 
-// store 32-bit value in little endian
 static void store_u32_le(uint8_t addr, uint32_t v)
 {
     regs[addr] = (uint8_t)(v & 0xFF);
@@ -69,7 +66,6 @@ static void store_i32_le(uint8_t addr, int32_t v)
     store_u32_le(addr, (uint32_t)v);
 }
 
-// read 32-bit signed value
 static int32_t load_i32_le(uint8_t addr)
 {
     int32_t v;
@@ -82,7 +78,6 @@ static int32_t load_i32_le(uint8_t addr)
     return v;
 }
 
-// read 16-bit unsigned value
 static uint16_t load_u16_le(uint8_t addr)
 {
     uint16_t v;
@@ -196,7 +191,6 @@ int regmap_write_burst(uint8_t addr, const uint8_t *buf, size_t len)
     return 0;
 }
 
-// raise interrupt if enabled
 static void raise_irq(uint8_t src_bit)
 {
     if (regs[REG_INT_EN] & src_bit) {
@@ -214,13 +208,7 @@ void regmap_publish_bme680(int32_t temp_centi_c,
         store_i32_le(REG_BME_TEMP_0, temp_centi_c);
         store_u32_le(REG_BME_HUM_0, hum_milli_pct);
         store_u32_le(REG_BME_GAS_0, gas_ohm);
-
-        if (gas_valid) {
-            regs[REG_BME_GAS_VALID] = 1;
-        } else {
-            regs[REG_BME_GAS_VALID] = 0;
-        }
-
+        regs[REG_BME_GAS_VALID] = gas_valid ? 1 : 0;
         regs[REG_STATUS] |= STATUS_DATA_READY;
     }
 }
@@ -228,16 +216,12 @@ void regmap_publish_bme680(int32_t temp_centi_c,
 void regmap_publish_mlx90614(int32_t amb_centi_c, int32_t obj_centi_c)
 {
     K_SPINLOCK(&regs_lock) {
-        int32_t th;
-        bool obj_is_high;
+        int32_t th = load_i32_le(REG_T_OBJ_HIGH_0);
+        bool obj_is_high = (th != TH_DISABLED && obj_centi_c > th);
 
         store_i32_le(REG_MLX_AMB_0, amb_centi_c);
         store_i32_le(REG_MLX_OBJ_0, obj_centi_c);
-
         regs[REG_STATUS] |= STATUS_DATA_READY;
-
-        th = load_i32_le(REG_T_OBJ_HIGH_0);
-        obj_is_high = (th != TH_DISABLED && obj_centi_c > th);
 
         if (obj_is_high && !t_obj_high_latched) {
             raise_irq(INT_SRC_T_OBJ_HIGH);
@@ -252,12 +236,7 @@ void regmap_publish_mmwave(bool present, uint16_t range_cm)
     K_SPINLOCK(&regs_lock) {
         store_u16_le(REG_MMW_RANGE_0, range_cm);
 
-        if (present) {
-            regs[REG_MMW_PRESENT] = 1;
-        } else {
-            regs[REG_MMW_PRESENT] = 0;
-        }
-
+        regs[REG_MMW_PRESENT] = present ? 1 : 0;
         regs[REG_STATUS] |= STATUS_DATA_READY;
     }
 }

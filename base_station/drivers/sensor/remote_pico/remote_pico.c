@@ -3,11 +3,12 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/sensor.h>
-#include <zephyr/sys/byteorder.h>
 #include <zephyr/logging/log.h>
-#include "remote_pico.h"
+#include <zephyr/sys/byteorder.h>
+
 #include <errno.h>
-#include <string.h>
+
+#include "remote_pico.h"
 
 LOG_MODULE_REGISTER(remote_pico, CONFIG_SENSOR_LOG_LEVEL);
 
@@ -20,7 +21,6 @@ LOG_MODULE_REGISTER(remote_pico, CONFIG_SENSOR_LOG_LEVEL);
 
 /* control / status */
 #define REG_STATUS          0x00
-#define REG_CTRL            0x01
 #define REG_INT_SRC         0x02
 #define REG_INT_EN          0x03
 
@@ -31,7 +31,6 @@ LOG_MODULE_REGISTER(remote_pico, CONFIG_SENSOR_LOG_LEVEL);
 #define REG_BME_GAS_VALID   0x1C  /* uint8 */
 
 /* MLX90614 */
-#define REG_MLX_AMB_0       0x20  /* int32, centi-C */
 #define REG_MLX_OBJ_0       0x24  /* int32, centi-C */
 
 /* mmWave */
@@ -45,11 +44,8 @@ LOG_MODULE_REGISTER(remote_pico, CONFIG_SENSOR_LOG_LEVEL);
 #define REG_MIC_RMS_0       0x44  /* int32, ADC counts */
 #define REG_MIC_BASELINE_0  0x48  /* int32, ADC counts */
 
-/* Threshold/config registers */
-#define REG_MIC_PEAK_TH_0   0x60  /* int32, ADC counts */
-#define REG_MIC_RMS_TH_0    0x64  /* int32, ADC counts */
+/* Fire threshold/config registers */
 #define REG_T_OBJ_HIGH_0    0x68  /* int32, centi-C */
-#define REG_T_AIR_HIGH_0    0x6C  /* int32, centi-C */
 
 #define REG_CHIP_ID         0xFF
 #define CHIP_ID_EXPECTED    0x42
@@ -70,15 +66,16 @@ struct remote_pico_data {
     uint8_t buf[BURST_LEN];
 };
 
-/* --- Helpers to decode little-endian fields from the burst buffer --- */
 static inline int32_t buf_i32(const uint8_t *p)
 {
     return (int32_t)sys_get_le32(p);
 }
+
 static inline uint32_t buf_u32(const uint8_t *p)
 {
     return sys_get_le32(p);
 }
+
 static inline uint16_t buf_u16(const uint8_t *p)
 {
     return sys_get_le16(p);
@@ -129,23 +126,6 @@ int remote_pico_set_object_temp_high(const struct device *dev, int32_t centi_c)
     return write_i32(dev, REG_T_OBJ_HIGH_0, centi_c);
 }
 
-int remote_pico_set_air_temp_high(const struct device *dev, int32_t centi_c)
-{
-    return write_i32(dev, REG_T_AIR_HIGH_0, centi_c);
-}
-
-int remote_pico_set_mic_peak_threshold(const struct device *dev,
-                                       int32_t adc_counts)
-{
-    return write_i32(dev, REG_MIC_PEAK_TH_0, adc_counts);
-}
-
-int remote_pico_set_mic_rms_threshold(const struct device *dev,
-                                      int32_t adc_counts)
-{
-    return write_i32(dev, REG_MIC_RMS_TH_0, adc_counts);
-}
-
 int remote_pico_set_mmwave_max_gate(const struct device *dev, uint8_t max_gate)
 {
     if (max_gate > 15) {
@@ -161,21 +141,15 @@ int remote_pico_set_mmwave_absence_delay(const struct device *dev,
     return write_u16(dev, REG_MMW_ABSENCE_0, seconds);
 }
 
-/* Convert centi-Celsius to sensor_value (val1 = integer part,
- * val2 = micro fractional). */
 static void centi_c_to_sv(int32_t centi_c, struct sensor_value *v)
 {
     v->val1 = centi_c / 100;
-    /* sensor_value::val2 is micro-units (1e-6). centi-degree
-     * remainder * 10000 gives the right scale. */
     v->val2 = (centi_c % 100) * 10000;
 }
 
-/* Convert milli-percent to sensor_value. */
 static void milli_pct_to_sv(uint32_t milli_pct, struct sensor_value *v)
 {
     v->val1 = (int32_t)(milli_pct / 1000);
-    /* (milli_pct % 1000) is a millipoint; * 1000 converts to micro. */
     v->val2 = (int32_t)((milli_pct % 1000) * 1000);
 }
 
@@ -227,7 +201,6 @@ static int remote_pico_channel_get(const struct device *dev,
     switch ((int)chan) {
 
     case SENSOR_CHAN_AMBIENT_TEMP: {
-        /* Air temperature from BME680. */
         centi_c_to_sv(buf_i32(&b[REG_BME_TEMP_0]), val);
         return 0;
     }
@@ -238,20 +211,17 @@ static int remote_pico_channel_get(const struct device *dev,
     }
 
     case SENSOR_CHAN_GAS_RES: {
-        /* Gas resistance in ohms; whole-number, no fractional part. */
         val->val1 = (int32_t)buf_u32(&b[REG_BME_GAS_0]);
         val->val2 = 0;
         return 0;
     }
 
     case REMOTE_PICO_CHAN_OBJECT_TEMP: {
-        /* Object temperature from MLX90614 IR. */
         centi_c_to_sv(buf_i32(&b[REG_MLX_OBJ_0]), val);
         return 0;
     }
 
     case REMOTE_PICO_CHAN_MMWAVE_RANGE: {
-        /* Range in cm. */
         val->val1 = buf_u16(&b[REG_MMW_RANGE_0]);
         val->val2 = 0;
         return 0;

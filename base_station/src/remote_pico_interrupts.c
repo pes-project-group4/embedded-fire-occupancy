@@ -33,10 +33,6 @@ static bool remote_sensor_is_occupied(void)
 {
     struct sensor_value v;
 
-    if (remote_sensor == NULL) {
-        return false;
-    }
-
     if (sensor_channel_get(remote_sensor,
                            (enum sensor_channel)REMOTE_PICO_CHAN_OCCUPANCY,
                            &v) != 0) {
@@ -167,7 +163,7 @@ int32_t remote_pico_interrupts_get_fire_threshold(void)
 
 int remote_pico_interrupts_set_fire_threshold(int32_t centi_c)
 {
-    int ret;
+    int ret = 0;
 
     if (remote_sensor == NULL) {
         return -ENODEV;
@@ -176,25 +172,19 @@ int remote_pico_interrupts_set_fire_threshold(int32_t centi_c)
     remote_pico_interrupts_lock_sensor();
 
     ret = remote_pico_set_interrupts(remote_sensor, 0);
-    if (ret != 0) {
-        remote_pico_interrupts_unlock_sensor();
-        return ret;
-    }
-
-    ret = remote_pico_set_object_temp_high(remote_sensor, centi_c);
     if (ret == 0) {
-        fire_threshold_centi_c = centi_c;
+        ret = remote_pico_set_object_temp_high(remote_sensor, centi_c);
+        if (ret == 0) {
+            fire_threshold_centi_c = centi_c;
+        }
     }
-
     if (ret == 0) {
         ret = remote_pico_clear_interrupts(remote_sensor);
     }
-
     if (ret == 0) {
         ret = remote_pico_set_interrupts(remote_sensor,
                                          REMOTE_PICO_INT_T_OBJ_HIGH);
     }
-
     if (ret == 0) {
         interrupt_demo_configured = true;
     }

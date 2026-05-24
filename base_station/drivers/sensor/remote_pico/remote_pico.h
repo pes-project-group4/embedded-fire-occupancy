@@ -26,21 +26,12 @@ enum remote_pico_chan {
 };
 
 enum remote_pico_int_source {
-    REMOTE_PICO_INT_MIC_PEAK   = (1u << 0),
-    REMOTE_PICO_INT_MIC_RMS    = (1u << 1),
     REMOTE_PICO_INT_T_OBJ_HIGH = (1u << 2),
-    REMOTE_PICO_INT_T_AIR_HIGH = (1u << 3),
-    REMOTE_PICO_INT_MMWAVE     = (1u << 4),
 };
-
-#define REMOTE_PICO_THRESHOLD_DISABLED INT32_MAX
 
 int remote_pico_set_interrupts(const struct device *dev, uint8_t mask);
 int remote_pico_clear_interrupts(const struct device *dev);
 int remote_pico_set_object_temp_high(const struct device *dev, int32_t centi_c);
-int remote_pico_set_air_temp_high(const struct device *dev, int32_t centi_c);
-int remote_pico_set_mic_peak_threshold(const struct device *dev, int32_t adc_counts);
-int remote_pico_set_mic_rms_threshold(const struct device *dev, int32_t adc_counts);
 int remote_pico_set_mmwave_max_gate(const struct device *dev, uint8_t max_gate);
 int remote_pico_set_mmwave_absence_delay(const struct device *dev,
                                          uint16_t seconds);

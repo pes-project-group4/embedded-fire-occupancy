@@ -19,7 +19,10 @@
 #define DEFAULT_MMWAVE_MAX_GATE 5
 #define DEFAULT_MMWAVE_ABSENCE_S 5
 
-static const struct device *const console = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
+typedef bool (*exit_requested_fn)(void);
+
+static const struct device *const console =
+    DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 
 static uint8_t current_max_gate = DEFAULT_MMWAVE_MAX_GATE;
 static uint16_t current_absence_s = DEFAULT_MMWAVE_ABSENCE_S;
@@ -31,7 +34,7 @@ static void uart_echo(unsigned char c)
     }
 }
 
-static bool read_line(char *buf, size_t len, bool (*should_exit)(void))
+static bool read_line(char *buf, size_t len, exit_requested_fn exit_requested)
 {
     size_t pos = 0;
 
@@ -42,7 +45,7 @@ static bool read_line(char *buf, size_t len, bool (*should_exit)(void))
     while (1) {
         unsigned char c;
 
-        if (should_exit != NULL && should_exit()) {
+        if (exit_requested != NULL && exit_requested()) {
             printk("\n");
             return false;
         }
@@ -195,14 +198,14 @@ static void print_menu(void)
     printk("> ");
 }
 
-static void configure_threshold(bool (*should_exit)(void))
+static void configure_threshold(exit_requested_fn exit_requested)
 {
     char line[LINE_BUF_LEN];
     int32_t centi_c;
     int ret;
 
     printk("Fire threshold in C (example 30 or 30.50): ");
-    if (!read_line(line, sizeof(line), should_exit)) {
+    if (!read_line(line, sizeof(line), exit_requested)) {
         return;
     }
 
@@ -223,14 +226,14 @@ static void configure_threshold(bool (*should_exit)(void))
 }
 
 static void configure_max_gate(const struct device *sensor,
-                               bool (*should_exit)(void))
+                               exit_requested_fn exit_requested)
 {
     char line[LINE_BUF_LEN];
     uint32_t value;
     int ret;
 
     printk("Max range gate (0..15, each gate is about 70 cm): ");
-    if (!read_line(line, sizeof(line), should_exit)) {
+    if (!read_line(line, sizeof(line), exit_requested)) {
         return;
     }
 
@@ -253,14 +256,14 @@ static void configure_max_gate(const struct device *sensor,
 }
 
 static void configure_absence_delay(const struct device *sensor,
-                                    bool (*should_exit)(void))
+                                    exit_requested_fn exit_requested)
 {
     char line[LINE_BUF_LEN];
     uint32_t value;
     int ret;
 
     printk("Absence delay in seconds (0..65535): ");
-    if (!read_line(line, sizeof(line), should_exit)) {
+    if (!read_line(line, sizeof(line), exit_requested)) {
         return;
     }
 
@@ -282,7 +285,8 @@ static void configure_absence_delay(const struct device *sensor,
     }
 }
 
-void config_mode_run(const struct device *sensor, bool (*should_exit)(void))
+void config_mode_run(const struct device *sensor,
+                     exit_requested_fn exit_requested)
 {
     char line[LINE_BUF_LEN];
 
@@ -296,19 +300,19 @@ void config_mode_run(const struct device *sensor, bool (*should_exit)(void))
 
     while (1) {
         print_menu();
-        if (!read_line(line, sizeof(line), should_exit)) {
+        if (!read_line(line, sizeof(line), exit_requested)) {
             break;
         }
 
         switch (line[0]) {
         case '1':
-            configure_threshold(should_exit);
+            configure_threshold(exit_requested);
             break;
         case '2':
-            configure_max_gate(sensor, should_exit);
+            configure_max_gate(sensor, exit_requested);
             break;
         case '3':
-            configure_absence_delay(sensor, should_exit);
+            configure_absence_delay(sensor, exit_requested);
             break;
         case 'q':
         case 'Q':

@@ -101,8 +101,8 @@ static void alarm_thread(void *p1, void *p2, void *p3)
 
         neopixel_red(false);
 
-        while (atomic_get(&alarm_active) != 0) {
-            if (atomic_get(&alarm_flash_red) != 0) {
+        while (atomic_get(&alarm_active)) {
+            if (atomic_get(&alarm_flash_red)) {
                 int64_t now = k_uptime_get();
 
                 if (now >= next_led_toggle) {
@@ -131,21 +131,21 @@ int fire_alarm_init(void)
     int ret;
 
     buzzer_ready = device_is_ready(buzzer.port);
-    if (buzzer_ready) {
+    if (!buzzer_ready) {
+        printk("fire alarm: buzzer not ready\n");
+    } else {
         ret = gpio_pin_configure_dt(&buzzer, GPIO_OUTPUT_INACTIVE);
         if (ret != 0) {
             printk("fire alarm: buzzer configure failed: %d\n", ret);
             buzzer_ready = false;
         }
-    } else {
-        printk("fire alarm: buzzer not ready\n");
     }
 
     neopixel_ready = device_is_ready(neopixel);
-    if (neopixel_ready) {
-        neopixel_red(false);
-    } else {
+    if (!neopixel_ready) {
         printk("fire alarm: NeoPixel not ready\n");
+    } else {
+        neopixel_red(false);
     }
 
     if (!buzzer_ready && !neopixel_ready) {

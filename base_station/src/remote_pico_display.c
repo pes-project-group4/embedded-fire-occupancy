@@ -37,18 +37,6 @@ void remote_pico_print_irq_sources(uint8_t src)
     if (src & REMOTE_PICO_INT_T_OBJ_HIGH) {
         printk(" T_OBJ_HIGH");
     }
-    if (src & REMOTE_PICO_INT_T_AIR_HIGH) {
-        printk(" T_AIR_HIGH");
-    }
-    if (src & REMOTE_PICO_INT_MIC_PEAK) {
-        printk(" MIC_PEAK");
-    }
-    if (src & REMOTE_PICO_INT_MIC_RMS) {
-        printk(" MIC_RMS");
-    }
-    if (src & REMOTE_PICO_INT_MMWAVE) {
-        printk(" MMWAVE");
-    }
 }
 
 void remote_pico_print_sensor_snapshot(const struct device *sensor)
