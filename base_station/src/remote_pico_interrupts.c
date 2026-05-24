@@ -23,6 +23,8 @@ static struct gpio_callback remote_irq_cb;
 static K_MUTEX_DEFINE(remote_sensor_lock);
 static bool interrupt_demo_configured;
 static uint32_t last_irq_config_try_ms;
+static int32_t fire_threshold_centi_c =
+    REMOTE_PICO_FIRE_THRESHOLD_DEFAULT_CENTI_C;
 
 static void remote_irq_work_handler(struct k_work *work);
 static K_WORK_DEFINE(remote_irq_work, remote_irq_work_handler);
@@ -158,6 +160,50 @@ int remote_pico_interrupts_init(const struct device *sensor)
     return configure_irq_gpio();
 }
 
+int32_t remote_pico_interrupts_get_fire_threshold(void)
+{
+    return fire_threshold_centi_c;
+}
+
+int remote_pico_interrupts_set_fire_threshold(int32_t centi_c)
+{
+    int ret;
+
+    if (remote_sensor == NULL) {
+        return -ENODEV;
+    }
+
+    remote_pico_interrupts_lock_sensor();
+
+    ret = remote_pico_set_interrupts(remote_sensor, 0);
+    if (ret != 0) {
+        remote_pico_interrupts_unlock_sensor();
+        return ret;
+    }
+
+    ret = remote_pico_set_object_temp_high(remote_sensor, centi_c);
+    if (ret == 0) {
+        fire_threshold_centi_c = centi_c;
+    }
+
+    if (ret == 0) {
+        ret = remote_pico_clear_interrupts(remote_sensor);
+    }
+
+    if (ret == 0) {
+        ret = remote_pico_set_interrupts(remote_sensor,
+                                         REMOTE_PICO_INT_T_OBJ_HIGH);
+    }
+
+    if (ret == 0) {
+        interrupt_demo_configured = true;
+    }
+
+    remote_pico_interrupts_unlock_sensor();
+
+    return ret;
+}
+
 static int configure_remote_interrupt_demo(const struct device *sensor)
 {
     int ret;
@@ -168,8 +214,7 @@ static int configure_remote_interrupt_demo(const struct device *sensor)
         return ret;
     }
 
-    ret = remote_pico_set_object_temp_high(sensor,
-                                           REMOTE_PICO_FIRE_THRESHOLD_CENTI_C);
+    ret = remote_pico_set_object_temp_high(sensor, fire_threshold_centi_c);
     if (ret != 0) {
         printk("interrupt demo: write T_obj threshold failed: %d\n", ret);
         return ret;
@@ -188,8 +233,8 @@ static int configure_remote_interrupt_demo(const struct device *sensor)
     }
 
     printk("interrupt demo: GPIO16, T_obj > %d.%02d C\n",
-           REMOTE_PICO_FIRE_THRESHOLD_CENTI_C / 100,
-           REMOTE_PICO_FIRE_THRESHOLD_CENTI_C % 100);
+           fire_threshold_centi_c / 100,
+           fire_threshold_centi_c % 100);
 
     return 0;
 }

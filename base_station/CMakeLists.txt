@@ -5,6 +5,7 @@ project(base_station)
 
 target_sources(app PRIVATE
     src/main.c
+    src/config_mode.c
     src/fire_alarm.c
     src/remote_pico_display.c
     src/remote_pico_interrupts.c

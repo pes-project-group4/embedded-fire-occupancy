@@ -41,5 +41,8 @@ int remote_pico_set_object_temp_high(const struct device *dev, int32_t centi_c);
 int remote_pico_set_air_temp_high(const struct device *dev, int32_t centi_c);
 int remote_pico_set_mic_peak_threshold(const struct device *dev, int32_t adc_counts);
 int remote_pico_set_mic_rms_threshold(const struct device *dev, int32_t adc_counts);
+int remote_pico_set_mmwave_max_gate(const struct device *dev, uint8_t max_gate);
+int remote_pico_set_mmwave_absence_delay(const struct device *dev,
+                                         uint16_t seconds);
 
 #endif /* REMOTE_PICO_CHANNELS_H_ */

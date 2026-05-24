@@ -37,6 +37,8 @@ LOG_MODULE_REGISTER(remote_pico, CONFIG_SENSOR_LOG_LEVEL);
 /* mmWave */
 #define REG_MMW_RANGE_0     0x30  /* uint16, cm */
 #define REG_MMW_PRESENT     0x32  /* uint8 */
+#define REG_MMW_MAX_GATE    0x33  /* uint8, 0..15 */
+#define REG_MMW_ABSENCE_0   0x34  /* uint16, seconds */
 
 /* Mic */
 #define REG_MIC_PEAK_0      0x40  /* int32, ADC counts */
@@ -101,6 +103,17 @@ static int write_i32(const struct device *dev, uint8_t reg, int32_t val)
     return i2c_write_dt(&cfg->bus, tx, sizeof(tx));
 }
 
+static int write_u16(const struct device *dev, uint8_t reg, uint16_t val)
+{
+    const struct remote_pico_config *cfg = dev->config;
+    uint8_t tx[3];
+
+    tx[0] = reg;
+    sys_put_le16(val, &tx[1]);
+
+    return i2c_write_dt(&cfg->bus, tx, sizeof(tx));
+}
+
 int remote_pico_set_interrupts(const struct device *dev, uint8_t mask)
 {
     return write_u8(dev, REG_INT_EN, mask);
@@ -131,6 +144,21 @@ int remote_pico_set_mic_rms_threshold(const struct device *dev,
                                       int32_t adc_counts)
 {
     return write_i32(dev, REG_MIC_RMS_TH_0, adc_counts);
+}
+
+int remote_pico_set_mmwave_max_gate(const struct device *dev, uint8_t max_gate)
+{
+    if (max_gate > 15) {
+        return -EINVAL;
+    }
+
+    return write_u8(dev, REG_MMW_MAX_GATE, max_gate);
+}
+
+int remote_pico_set_mmwave_absence_delay(const struct device *dev,
+                                         uint16_t seconds)
+{
+    return write_u16(dev, REG_MMW_ABSENCE_0, seconds);
 }
 
 /* Convert centi-Celsius to sensor_value (val1 = integer part,
