@@ -1,0 +1,12 @@
+description: Remote Pico sensor node over I2C
+
+compatible: "vnd,remote-pico"
+
+include:
+  - name: i2c-device.yaml
+  - name: sensor-device.yaml
+
+properties:
+  int-gpios:
+    type: phandle-array
+    description: GPIO input connected to the sensor node interrupt output.

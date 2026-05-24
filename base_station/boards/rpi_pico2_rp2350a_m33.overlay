@@ -1,13 +1,89 @@
-/ {
-	aliases {
-		led0 = &user_led0;
-	};
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/led/led.h>
+#include <zephyr/dt-bindings/pinctrl/rpi-pico-rp2350a-pinctrl.h>
 
-	leds {
-		compatible = "gpio-leds";
+&spi0 {
+    status = "disabled";
+};
 
-		user_led0: user_led0 {
-			gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+&pinctrl {
+    ws2812_pio0_default: ws2812_pio0_default {
+        group1 {
+            pinmux = <PIO0_P28>;
+        };
+    };
+
+    i2c1_default: i2c1_default {
+		group1 {
+			pinmux = <I2C1_SDA_P6>, <I2C1_SCL_P7>;
+			input-enable;
+			input-schmitt-enable;
+			bias-pull-up;
 		};
 	};
+};
+
+&i2c1 {
+    status = "okay";
+    pinctrl-0 = <&i2c1_default>;
+    pinctrl-names = "default";
+    clock-frequency = <I2C_BITRATE_STANDARD>;   /* 100 kHz to start */
+
+    remote_pico: remote_pico@42 {
+        compatible = "vnd,remote-pico";
+        reg = <0x42>;
+        int-gpios = <&gpio0 16 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+        status = "okay";
+    };
+};
+
+
+/ {
+    chosen {
+        zephyr,led-strip = &neopixel;
+    };
+
+    aliases {
+        buzzer = &buzzer_pin;
+        neopixel = &neopixel;
+        sw0 = &user_btn0;
+    };
+
+    buttons {
+        compatible = "gpio-keys";
+
+        user_btn0: user_btn0 {
+            gpios = <&gpio0 20 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            label = "BTN_GP20";
+        };
+    };
+
+    gpio_outputs {
+        compatible = "gpio-leds";
+        buzzer_pin: buzzer_pin {
+            gpios = <&gpio0 18 GPIO_ACTIVE_HIGH>;
+        };
+    };
+};
+
+&pio0 {
+    status = "okay";
+    pio-ws2812 {
+        compatible = "worldsemi,ws2812-rpi_pico-pio";
+        status = "okay";
+        pinctrl-0 = <&ws2812_pio0_default>;
+        pinctrl-names = "default";
+        bit-waveform = <3>, <3>, <4>;
+
+        neopixel: ws2812 {
+            status = "okay";
+            gpios = <&gpio0 28 GPIO_ACTIVE_HIGH>;
+            chain-length = <1>;
+            color-mapping = <LED_COLOR_ID_GREEN
+                             LED_COLOR_ID_RED
+                             LED_COLOR_ID_BLUE>;
+            reset-delay = <280>;
+            frequency = <800000>;
+        };
+    };
 };

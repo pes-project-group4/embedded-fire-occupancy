@@ -18,11 +18,7 @@
 #define CTRL_EN_MIC (1u << 3)
 
 // interrupt source bits
-#define INT_SRC_MIC_PEAK (1u << 0)
-#define INT_SRC_MIC_RMS (1u << 1)
 #define INT_SRC_T_OBJ_HIGH (1u << 2)
-#define INT_SRC_T_AIR_HIGH (1u << 3)
-#define INT_SRC_MMWAVE (1u << 4)
 
 // status bits
 #define STATUS_DATA_READY (1u << 0)
@@ -50,10 +46,7 @@
 #define REG_MIC_BASELINE_0 0x48
 
 // threshold registers
-#define REG_MIC_PEAK_TH_0 0x60
-#define REG_MIC_RMS_TH_0 0x64
 #define REG_T_OBJ_HIGH_0 0x68
-#define REG_T_AIR_HIGH_0 0x6C
 
 // chip ID
 #define REG_CHIP_ID 0xFF
@@ -69,19 +62,12 @@ int regmap_write(uint8_t addr, uint8_t val);
 int regmap_read_burst(uint8_t addr, uint8_t *buf, size_t len);
 int regmap_write_burst(uint8_t addr, const uint8_t *buf, size_t len);
 
-void regmap_publish_bme680(int32_t temp_centi_c,
-                           uint32_t hum_milli_pct,
-                           uint32_t gas_ohm,
-                           bool gas_valid);
-
+void regmap_publish_bme680(int32_t temp_centi_c, uint32_t hum_milli_pct, uint32_t gas_ohm, bool gas_valid);
 void regmap_publish_mlx90614(int32_t amb_centi_c, int32_t obj_centi_c);
-
 void regmap_publish_mmwave(bool present, uint16_t range_cm);
-
 void regmap_publish_mic(int32_t peak, int32_t rms, int32_t baseline);
 
 uint8_t regmap_get_ctrl(void);
-
 void regmap_get_mmwave_config(uint8_t *max_gate, uint16_t *absence_s);
 
 #endif
