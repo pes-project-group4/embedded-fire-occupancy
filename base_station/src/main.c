@@ -14,16 +14,13 @@
 #include "../drivers/sensor/remote_pico/remote_pico.h"
 
 /*
- * Base station application.
- *
- * Polls the sensor node every second through the Zephyr Sensor API.
- * GPIO16 is also wired to the sensor node interrupt output and handled by
- * remote_pico_interrupts.c.
- *
- * Output goes to UART0 via printk (picoprobe CDC-ACM on Pico 2).
+ * GPIO16: sensor node interrupt output
+ * GPIO20: push button that toggles between normal mode and configuration mode
+ * Normal mode: prints sensor outputs to the console and triggers the fire alarm if the object temperature >= threshold
+ * Configuration mode: user can adjust the fire threshold and some mmWave settings through the console
  */
 
-#define POLL_PERIOD K_SECONDS(1)
+#define POLL_PERIOD K_SECONDS(1) // poll every 1 second in normal mode
 #define DEBOUNCE_MS 50
 #define BUTTON_STACK_SIZE 1024
 #define BUTTON_PRIORITY 5
@@ -33,8 +30,7 @@ enum base_station_mode {
     CONFIGURATION_MODE,
 };
 
-static const struct gpio_dt_spec button =
-    GPIO_DT_SPEC_GET(DT_ALIAS(sw0), gpios);
+static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(DT_ALIAS(sw0), gpios);
 
 static struct gpio_callback button_cb;
 static struct k_sem btn_sem;
@@ -52,14 +48,11 @@ static void update_fire_alarm_state(const struct device *sensor)
 {
     struct sensor_value v;
 
-    if (sensor_channel_get(sensor,
-                           (enum sensor_channel)REMOTE_PICO_CHAN_OBJECT_TEMP,
-                           &v) != 0) {
+    if (sensor_channel_get(sensor, (enum sensor_channel)REMOTE_PICO_CHAN_OBJECT_TEMP, &v) != 0) {
         return;
     }
 
-    if (sensor_value_to_centi_c(&v)
-        <= remote_pico_interrupts_get_fire_threshold()) {
+    if (sensor_value_to_centi_c(&v) <= remote_pico_interrupts_get_fire_threshold()) {
         fire_alarm_stop();
     }
 }
@@ -77,13 +70,10 @@ static bool configuration_mode_should_exit(void)
 static void set_mode(enum base_station_mode mode)
 {
     atomic_set(&current_mode, mode);
-    printk("Mode: %s\n",
-           mode == CONFIGURATION_MODE ? "configuration" : "normal");
+    printk("Mode: %s\n", mode == CONFIGURATION_MODE ? "configuration" : "normal");
 }
 
-static void button_isr(const struct device *dev,
-                       struct gpio_callback *cb,
-                       uint32_t pins)
+static void button_isr(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
     ARG_UNUSED(dev);
     ARG_UNUSED(cb);
