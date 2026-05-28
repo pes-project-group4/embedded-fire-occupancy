@@ -1,4 +1,4 @@
-# Zephyr Sensor Node - Group 4
+# Embedded Fire and Occupancy Monitoring System - Group 4
 
 ## Apps
 - **base_station** – Acting as the interface/driver node
@@ -43,8 +43,8 @@ To create a release, go to **GitHub → Releases → Draft a new release**, ente
 
 1. **Create a branch** for your feature (ex: `feature/add-temperature-sensor`)
 2. **Develop and push** your changes to that branch
-3. **Check CI** — make sure both base_station and sensor_node build successfully (green ✅)
+3. **Check CI**: make sure both base_station and sensor_node build successfully (green ✅)
 4. **Open a Pull Request** to `main` only after all builds pass
-5. **Wait for review** — at least one team member should review before merging
+5. **Wait for review**: at least one team member should review before merging
 6. **Do not merge with failing builds**
-7. **To release** — after merging, create a release from the GitHub UI with a version tag
+7. **To release**: after merging, create a release from the GitHub UI with a version tag
