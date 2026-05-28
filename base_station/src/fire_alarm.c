@@ -164,11 +164,12 @@ void fire_alarm_trigger(bool occupied)
         return;
     }
 
+    atomic_set(&alarm_flash_red, occupied ? 1 : 0);
+
     if (!atomic_cas(&alarm_active, 0, 1)) {
         return;
     }
 
-    atomic_set(&alarm_flash_red, occupied ? 1 : 0);
     printk("fire alarm triggered%s\n", occupied ? " (occupied)" : "");
     k_sem_give(&alarm_start_sem);
 }

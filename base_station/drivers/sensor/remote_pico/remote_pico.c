@@ -43,7 +43,7 @@ LOG_MODULE_REGISTER(remote_pico, CONFIG_SENSOR_LOG_LEVEL);
 #define REG_CHIP_ID         0xFF
 #define CHIP_ID_EXPECTED    0x42
 
-/// I2C burst read starting at this register populates the entire local cache
+// I2C burst read starting at this register returns all sensor data and status
 #define BURST_START         0x00
 #define BURST_LEN           0x4C  /* 76 bytes */
 

@@ -1,50 +1,45 @@
 # Embedded Fire and Occupancy Monitoring System - Group 4
 
 ## Apps
-- **base_station** – Acting as the interface/driver node
-- **sensor_node** – Firmware handling connected sensors (Not allowed to use Sensors API)
+* `base_station`: reads the sensor node through a Zephyr Sensor API driver, shows readings on the console, handles configuration mode, and drives alarm outputs.
+* `sensor_node`: reads BME680, MLX90614, HMMD mmWave, and SPW2430 sensors and exposes a register map over I2C target mode.
 
 ## Requirements
 
-* Zephyr RTOS (west workspace initialized)
-* Zephyr SDK installed
-* Python 3.12+
+* Zephyr RTOS west workspace initialized from `west.yml`
+* Zephyr SDK with the `arm-zephyr-eabi` toolchain
+* Python 3.12 or newer
 
-## Build Instructions
+## Build
 
-Build each application separately:
+Build each application separately from the repository root:
 
-### Base Station
 ```bash
-west build -b rpi_pico2/rp2350a/m33 -s base_station -d build/base_station
+west build -b rpi_pico2/rp2350a/m33 -s base_station -d build/base_station -p auto
 ```
 
-### Sensor Node
 ```bash
-west build -b rpi_pico2/rp2350a/m33 -s sensor_node -d build/sensor_node
+west build -b rpi_pico2/rp2350a/m33 -s sensor_node -d build/sensor_node -p auto
 ```
 
-## Output
+Firmware artifacts are generated under:
 
-Firmware files will be generated in:
 * `build/base_station/zephyr/`
 * `build/sensor_node/zephyr/`
 
-Look for:
-* `zephyr.uf2` (for flashing)
+Flash the generated `zephyr.uf2` file for each application to the matching Pico 2 board.
 
-## CI/CD
+## CI and Releases
 
-This repo has GitHub Actions set up to automatically build both apps on every push and pull request. You can check the build status on the Actions tab or by the ✅/❌ icon on each commit/PR.
+GitHub Actions builds both applications on every push and pull request. Before opening a pull request, make sure both CI jobs pass.
 
-To create a release, go to **GitHub → Releases → Draft a new release**, enter a version tag (ex: `v1.0.0`), and publish. The release workflow will automatically build both apps and attach the firmware files (`.uf2`, `.elf`, `.hex`, `.bin`) to the release.
+To create a release, open GitHub Releases, draft a new release with a version tag such as `v1.0.0`, and publish it. The release workflow builds both applications and attaches `.uf2`, `.elf`, `.hex`, and `.bin` firmware artifacts.
 
-## Workflow
+## Review Workflow
 
-1. **Create a branch** for your feature (ex: `feature/add-temperature-sensor`)
-2. **Develop and push** your changes to that branch
-3. **Check CI**: make sure both base_station and sensor_node build successfully (green ✅)
-4. **Open a Pull Request** to `main` only after all builds pass
-5. **Wait for review**: at least one team member should review before merging
-6. **Do not merge with failing builds**
-7. **To release**: after merging, create a release from the GitHub UI with a version tag
+1. Create a feature branch, for example `feature/add-temperature-sensor`.
+2. Build both applications locally.
+3. Push the branch and confirm the CI builds pass.
+4. Open a pull request to `main`.
+5. Wait for at least one team member review before merging.
+6. Do not merge with failing builds.
