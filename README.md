@@ -15,11 +15,11 @@
 Build each application separately from the repository root:
 
 ```bash
-west build -b rpi_pico2/rp2350a/m33 -s base_station -d build/base_station -p auto
+west build -b rpi_pico2/rp2350a/m33 -s base_station -d build/base_station -p always
 ```
 
 ```bash
-west build -b rpi_pico2/rp2350a/m33 -s sensor_node -d build/sensor_node -p auto
+west build -b rpi_pico2/rp2350a/m33 -s sensor_node -d build/sensor_node -p always
 ```
 
 Firmware artifacts are generated under:
